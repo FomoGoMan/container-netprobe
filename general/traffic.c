@@ -1,14 +1,14 @@
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
-#include <bpf/bpf_cgroup_read.h>
-
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __type(key, u64);   // cgroup_id
     __type(value, u64); // bytes count
     __uint(max_entries, 1024);
 } cgroup_stats SEC(".maps");
+
+#define TC_ACT_OK		0
 
 SEC("cgroup_skb/ingress")
 int cgroup_ingress(struct __sk_buff *skb) {
