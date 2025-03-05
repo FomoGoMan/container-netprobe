@@ -47,7 +47,7 @@ func printStats(flowMap types.FlowMap) {
 	for container, flows := range flowMap {
 		fmt.Printf("Container: %s\n", container)
 		fmt.Printf("  TCP Upload (IPv4):   %10d bytes\n", (*flows)[uint32(types.L4_TCP_SEND_V4)])
-		fmt.Printf("  TCP Download (IPv4): %10d bytes\n", (*flows)[uint32(types.L4_TCP_SEND_V4)])
+		fmt.Printf("  TCP Download (IPv4): %10d bytes\n", (*flows)[uint32(types.L4_TCP_RECV_V4)])
 		fmt.Printf("  UDP Upload (IPv4):   %10d bytes\n", (*flows)[uint32(types.L4_UDP_SEND_V4)])
 		fmt.Printf("  UDP Download (IPv4): %10d bytes\n", (*flows)[uint32(types.L4_UDP_RECV_V4)])
 		fmt.Printf("  TCP Upload (IPv6):   %10d bytes\n", (*flows)[uint32(types.L4_TCP_SEND_V6)])

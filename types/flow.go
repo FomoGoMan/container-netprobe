@@ -26,7 +26,7 @@ const (
 	L3_RAW_SEND_V6
 )
 
-var allFlowTypes = []FlowType{
+var AllFlowTypes = []FlowType{
 	L4_TCP_SEND_V4,
 	L4_TCP_RECV_V4,
 	L4_UDP_SEND_V4,

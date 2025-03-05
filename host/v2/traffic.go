@@ -103,9 +103,9 @@ func (c *Collector) Collect() types.FlowMap {
 	flows := make(types.FlowMap)
 	cpus := utility.GetNumOfPossibleCpus()
 
-	var flow types.FlowData
+	flow := make(types.FlowData)
 	m := c.objs.NetworkFlowMap
-	for key := uint32(0); key < 14; key++ {
+	for _, key := range types.AllFlowTypes {
 		values := make([]uint64, cpus)
 		if err := m.Lookup(&key, &values); err == nil {
 			flow[key] = utility.Sum(values)
