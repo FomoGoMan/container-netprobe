@@ -1,6 +1,10 @@
 package traffic
 
 import (
+	"ebpf_collector/types"
+	"ebpf_collector/utility"
+	"fmt"
+
 	"github.com/cilium/ebpf/link"
 )
 
@@ -95,7 +99,7 @@ func (c *Collector) Close() {
 	c.objs.Close()
 }
 
-func (c *Collector) Collect() FlowMap {
+func (c *Collector) Collect() types.FlowMap {
 	flows := make(types.FlowMap)
 	cpus := utility.GetNumOfPossibleCpus()
 
@@ -106,7 +110,7 @@ func (c *Collector) Collect() FlowMap {
 		if err := m.Lookup(&key, &values); err == nil {
 			flow[key] = utility.Sum(values)
 		} else {
-			c.logger.Error("lookup %d failed: %v", key, err)
+			fmt.Printf("lookup %d failed: %v", key, err)
 		}
 	}
 
