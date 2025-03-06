@@ -5,7 +5,10 @@
 #include <bpf/bpf_endian.h>
 // clang-format on
 
+#define TC_ACT_OK 0
+
 char _license[] SEC("license") = "GPL";
+
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
