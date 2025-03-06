@@ -2,9 +2,9 @@ package monitor
 
 import (
 	"ebpf_collector/types"
-	"ebpf_collector/utility"
-	"fmt"
+	"log"
 
+	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
 )
 
@@ -13,7 +13,7 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target arm traffic ebpf.c
 
 type Collector struct {
-	objs  ebpfObjects
+	objs  trafficObjects
 	links map[string]link.Link
 }
 
@@ -50,8 +50,32 @@ func (c *Collector) load() error {
 	// 	Programs:     []*ebpf.Program{l.Program()},
 	// }
 
-	if err := load(&c.objs, nil); err != nil {
+	// Load pre-compiled programs and maps into the kernel.
+
+	if err := loadTrafficObjects(&c.objs, nil); err != nil {
+		log.Fatalf("loading objects: %v", err)
 		return err
+	}
+	defer c.objs.Close()
+
+	// Get the first-mounted cgroupv2 path.
+	// cgroupPath, err := detectCgroupPath()
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+
+	// Link the count_egress_packets program to the cgroup.
+	// // 挂载到根 CGroup (监控所有流量)
+	rootCgroup := "/sys/fs/cgroup"
+	if l, err := link.AttachCgroup(link.CgroupOptions{
+		Path:    rootCgroup,
+		Attach:  ebpf.AttachCGroupInetEgress,
+		Program: c.objs.CgroupEgress,
+	}); err != nil {
+		log.Fatal(err)
+		return err
+	} else {
+		c.links["cgroup_skb/egress"] = l
 	}
 
 	return nil
@@ -64,22 +88,14 @@ func (c *Collector) Close() {
 	c.objs.Close()
 }
 
-func (c *Collector) Collect() types.FlowMap {
-	flows := make(types.FlowMap)
-	cpus := utility.GetNumOfPossibleCpus()
+func (c *Collector) Collect() types.FlowCgroup {
+	flows := make(types.FlowCgroup)
+	var key, value uint64
 
-	flow := make(types.FlowData)
-	m := c.objs.NetworkFlowMap
-	for _, key := range types.AllFlowTypes {
-		values := make([]uint64, cpus)
-		if err := m.Lookup(&key, &values); err == nil {
-			flow[key] = utility.Sum(values)
-		} else {
-			fmt.Printf("lookup %d failed: %v", key, err)
-		}
+	iter := c.objs.CgroupStats.Iterate()
+	if iter.Next(&key, &value) {
+		flows[key] += value
 	}
 
-	container := "000000000000"
-	flows[container] = &flow
 	return flows
 }

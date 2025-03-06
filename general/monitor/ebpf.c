@@ -7,7 +7,7 @@
 
 char _license[] SEC("license") = "GPL";
 
-
+// TODO: optimize to BPF_MAP_TYPE_PERCPU_HASH
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __type(key, u64);   // cgroup_id
@@ -22,7 +22,6 @@ int cgroup_ingress(struct __sk_buff *skb) {
     u64 cgroup_id = bpf_get_current_cgroup_id();
     u64 *value = bpf_map_lookup_elem(&cgroup_stats, &cgroup_id);
     u64 bytes = skb->len;
-
     if (value) {
         __sync_fetch_and_add(value, bytes);
     } else {
