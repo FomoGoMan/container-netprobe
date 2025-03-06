@@ -2,7 +2,7 @@ package monitor
 
 import (
 	"ebpf_collector/types"
-	"log"
+	"fmt"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"
@@ -27,32 +27,31 @@ func NewCollector() (*Collector, error) {
 	}
 	return c, nil
 }
-
 func (c *Collector) load() error {
-
-	// Load pre-compiled programs and maps into the kernel.
 	if err := loadTrafficObjects(&c.objs, nil); err != nil {
-		log.Fatalf("loading objects: %v", err)
-		return err
+		return fmt.Errorf("loading objects: %v", err)
 	}
-	defer c.objs.Close()
 
-	// Get the first-mounted cgroupv2 path.
-	// cgroupPath, err := detectCgroupPath()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// Link the count_egress_packets program to the cgroup.
-	// // 挂载到根 CGroup (监控所有流量)
 	rootCgroup := "/sys/fs/cgroup"
+
+	// 挂载 Ingress
+	if l, err := link.AttachCgroup(link.CgroupOptions{
+		Path:    rootCgroup,
+		Attach:  ebpf.AttachCGroupInetIngress,
+		Program: c.objs.CgroupIngress,
+	}); err != nil {
+		return fmt.Errorf("attach ingress: %v", err)
+	} else {
+		c.links["cgroup_skb/ingress"] = l
+	}
+
+	// 挂载 Egress
 	if l, err := link.AttachCgroup(link.CgroupOptions{
 		Path:    rootCgroup,
 		Attach:  ebpf.AttachCGroupInetEgress,
 		Program: c.objs.CgroupEgress,
 	}); err != nil {
-		log.Fatal(err)
-		return err
+		return fmt.Errorf("attach egress: %v", err)
 	} else {
 		c.links["cgroup_skb/egress"] = l
 	}
@@ -69,11 +68,16 @@ func (c *Collector) Close() {
 
 func (c *Collector) Collect() types.FlowCgroup {
 	flows := make(types.FlowCgroup)
-	var key, value uint64
+	var key uint64
+	var values []uint64 // PERCPU 表的值是切片
 
 	iter := c.objs.CgroupStats.Iterate()
-	if iter.Next(&key, &value) {
-		flows[key] += value
+	for iter.Next(&key, &values) {
+		total := uint64(0)
+		for _, v := range values {
+			total += v // 累加所有 CPU 的统计值
+		}
+		flows[key] = total
 	}
 
 	return flows

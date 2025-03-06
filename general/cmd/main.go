@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 )
@@ -52,6 +53,21 @@ func printStats(flowMap types.FlowCgroup) {
 }
 
 func generateTestTraffic() {
+	// 创建测试 Cgroup
+	cgroupPath := "/sys/fs/cgroup/test_ebpf"
+	if err := os.Mkdir(cgroupPath, 0755); err != nil && !os.IsExist(err) {
+		log.Printf("create cgroup failed: %v", err)
+		return
+	}
+	defer os.Remove(cgroupPath)
+
+	// 将当前进程加入 Cgroup
+	if err := os.WriteFile(filepath.Join(cgroupPath, "cgroup.procs"),
+		[]byte(fmt.Sprintf("%d\n", os.Getpid())), 0644); err != nil {
+		log.Printf("write cgroup.procs failed: %v", err)
+		return
+	}
+
 	// TCP IPv4 流量
 	go func() {
 		conn, err := net.Dial("tcp", "example.com:80")
