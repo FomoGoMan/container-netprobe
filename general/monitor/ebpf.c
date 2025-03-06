@@ -17,6 +17,7 @@ struct bpf_map_def SEC("maps") ingress_stats = {
     .value_size = sizeof(u64),
     .max_entries = 1024,
 };
+
 struct bpf_map_def SEC("maps") egress_stats = {
     .type = BPF_MAP_TYPE_PERCPU_HASH,
     .key_size = sizeof(u64),
@@ -34,7 +35,7 @@ int cgroup_ingress(struct __sk_buff *skb) {
         *value += bytes;  
     } else {
         u64 init_val = bytes;
-        bpf_map_update_elem(&cgroup_stats, &cgroup_id, &init_val, BPF_NOEXIST);
+        bpf_map_update_elem(&ingress_stats, &cgroup_id, &init_val, BPF_NOEXIST);
     }
     return TC_ACT_OK;
 }
@@ -49,7 +50,7 @@ int cgroup_egress(struct __sk_buff *skb) {
         *value += bytes;  
     } else {
         u64 init_val = bytes;
-        bpf_map_update_elem(&cgroup_stats, &cgroup_id, &init_val, BPF_NOEXIST);
+        bpf_map_update_elem(&egress_stats, &cgroup_id, &init_val, BPF_NOEXIST);
     }
     return TC_ACT_OK;
 }
