@@ -1,6 +1,13 @@
+// clang-format off
+//go:build ignore
 #include "vmlinux.h"
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
+// clang-format on
+
+char _license[] SEC("license") = "GPL";
+
+
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __type(key, u64);   // cgroup_id
@@ -40,4 +47,3 @@ int cgroup_egress(struct __sk_buff *skb) {
     return TC_ACT_OK;
 }
 
-char _license[] SEC("license") = "GPL";
