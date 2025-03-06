@@ -21,7 +21,7 @@ func main() {
 	defer collector.Close()
 
 	// 启动流量生成器
-	// go generateTestTraffic()
+	go generateTestTraffic()
 
 	// 定时输出统计信息
 	ticker := time.NewTicker(2 * time.Second)
