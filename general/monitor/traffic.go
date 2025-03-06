@@ -29,29 +29,8 @@ func NewCollector() (*Collector, error) {
 }
 
 func (c *Collector) load() error {
-	// coll, err := ebpf.LoadCollection("ebpf.o")
-	// if err != nil {
-	// 	log.Fatalf("加载 eBPF 失败: %v", err)
-	// }
-
-	// // 挂载到根 CGroup (监控所有流量)
-	// rootCgroup := "/sys/fs/cgroup"
-	// l, err := link.AttachCgroup(link.CgroupOptions{
-	// 	Path:    rootCgroup,
-	// 	Program: coll.Programs["cgroup_ingress"],
-	// 	Attach:  ebpf.AttachCGroupInetIngress,
-	// })
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
-	// return &bpfObjects{
-	// 	cgroup_stats: coll.Maps["cgroup_stats"],
-	// 	Programs:     []*ebpf.Program{l.Program()},
-	// }
 
 	// Load pre-compiled programs and maps into the kernel.
-
 	if err := loadTrafficObjects(&c.objs, nil); err != nil {
 		log.Fatalf("loading objects: %v", err)
 		return err

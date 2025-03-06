@@ -19,7 +19,7 @@ struct {
 
 SEC("cgroup_skb/ingress")
 int cgroup_ingress(struct __sk_buff *skb) {
-    u64 cgroup_id = bpf_get_current_cgroup_id();
+    u64 cgroup_id = bpf_skb_cgroup_id();
     u64 *value = bpf_map_lookup_elem(&cgroup_stats, &cgroup_id);
     u64 bytes = skb->len;
     if (value) {
@@ -33,7 +33,7 @@ int cgroup_ingress(struct __sk_buff *skb) {
 
 SEC("cgroup_skb/egress")
 int cgroup_egress(struct __sk_buff *skb) {
-    u64 cgroup_id = bpf_get_current_cgroup_id();
+    u64 cgroup_id = bpf_skb_cgroup_id();
     u64 *value = bpf_map_lookup_elem(&cgroup_stats, &cgroup_id);
     u64 bytes = skb->len;
 
