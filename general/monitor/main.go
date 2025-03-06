@@ -1,4 +1,4 @@
-package main
+package monitor 
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -tags linux ebpf ebpf.c
 import (
 	"fmt"
