@@ -20,8 +20,8 @@ struct {
 SEC("cgroup_skb/ingress")
 int cgroup_ingress(struct __sk_buff *skb) {
     u64 cgroup_id = bpf_skb_cgroup_id(skb);
-    u32 high = (my_u64 >> 32) & 0xFFFFFFFF; 
-    u32 low = my_u64 & 0xFFFFFFFF;         
+    u32 high = (cgroup_id >> 32) & 0xFFFFFFFF; 
+    u32 low = cgroup_id & 0xFFFFFFFF;         
     bpf_trace_printk("u64 value: %u%u\n", high, low);    
 
     u64 *value = bpf_map_lookup_elem(&cgroup_stats, &cgroup_id);
