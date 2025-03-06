@@ -75,17 +75,4 @@ func generateTestTraffic() {
 		}
 	}()
 
-	// TCP IPv6 流量（需要系统支持）
-	go func() {
-		conn, err := net.Dial("tcp6", "[2606:2800:220:1:248:1893:25c8:1946]:80")
-		if err == nil {
-			defer conn.Close()
-			for i := 0; i < 3; i++ {
-				conn.Write([]byte("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"))
-				time.Sleep(1 * time.Second)
-			}
-		} else {
-			log.Printf("IPv6 test failed: %v (may not be supported)", err)
-		}
-	}()
 }
