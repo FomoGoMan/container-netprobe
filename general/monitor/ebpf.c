@@ -7,16 +7,15 @@
 
 #define TC_ACT_OK 0
 
-char _license[] SEC("license") = "GPL";
+char __license[] SEC("license") = "Dual MIT/GPL";
 
 
-struct {
-    __uint(type, BPF_MAP_TYPE_PERCPU_HASH);
-    __type(key, u64);   // cgroup_id
-    __type(value, u64); // bytes count
-    __uint(max_entries, 1024);
-} cgroup_stats SEC(".maps");
-
+struct bpf_map_def SEC("maps") cgroup_stats = {
+    .type = BPF_MAP_TYPE_PERCPU_HASH,
+    .key_size = sizeof(u64),
+    .value_size = sizeof(u64),
+    .max_entries = 1024,
+};
 
 SEC("cgroup_skb/ingress")
 int cgroup_ingress(struct __sk_buff *skb) {
