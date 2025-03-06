@@ -10,7 +10,14 @@
 char __license[] SEC("license") = "Dual MIT/GPL";
 
 
-struct bpf_map_def SEC("maps") cgroup_stats = {
+
+struct bpf_map_def SEC("maps") ingress_stats = {
+    .type = BPF_MAP_TYPE_PERCPU_HASH,
+    .key_size = sizeof(u64),
+    .value_size = sizeof(u64),
+    .max_entries = 1024,
+};
+struct bpf_map_def SEC("maps") egress_stats = {
     .type = BPF_MAP_TYPE_PERCPU_HASH,
     .key_size = sizeof(u64),
     .value_size = sizeof(u64),
@@ -20,7 +27,7 @@ struct bpf_map_def SEC("maps") cgroup_stats = {
 SEC("cgroup_skb/ingress")
 int cgroup_ingress(struct __sk_buff *skb) {
     u64 cgroup_id = bpf_skb_cgroup_id(skb);
-    u64 *value = bpf_map_lookup_elem(&cgroup_stats, &cgroup_id);
+    u64 *value = bpf_map_lookup_elem(&ingress_stats, &cgroup_id);
     u64 bytes = skb->len;
 
     if (value) {
@@ -35,7 +42,7 @@ int cgroup_ingress(struct __sk_buff *skb) {
 SEC("cgroup_skb/egress")
 int cgroup_egress(struct __sk_buff *skb) {
     u64 cgroup_id = bpf_skb_cgroup_id(skb);
-    u64 *value = bpf_map_lookup_elem(&cgroup_stats, &cgroup_id);
+    u64 *value = bpf_map_lookup_elem(&egress_stats, &cgroup_id);
     u64 bytes = skb->len;
 
     if (value) {
