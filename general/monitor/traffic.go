@@ -69,13 +69,13 @@ func (c *Collector) Close() {
 func (c *Collector) Collect() types.FlowCgroup {
 	flows := make(types.FlowCgroup)
 	var key uint64
-	var values []uint64 // PERCPU 表的值是切片
+	var values []uint64
 
 	iter := c.objs.CgroupStats.Iterate()
 	for iter.Next(&key, &values) {
 		total := uint64(0)
 		for _, v := range values {
-			total += v // 累加所有 CPU 的统计值
+			total += v
 		}
 		flows[key] = total
 	}

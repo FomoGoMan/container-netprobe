@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 )
@@ -52,6 +51,19 @@ func printStats(flowMap types.FlowCgroup) {
 	fmt.Println("================================")
 }
 
+func getCgroupID(path string) (uint64, error) {
+	fileinfo, err := os.Stat(path)
+	if err != nil {
+		return 0, err
+	}
+	stat, ok := fileinfo.Sys().(*syscall.Stat_t)
+	if !ok {
+		return 0, fmt.Errorf("无法获取 inode 信息")
+	}
+	// cgroup ID 是 inode 号
+	return stat.Ino, nil
+}
+
 func generateTestTraffic() {
 	// 创建测试 Cgroup
 	cgroupPath := "/sys/fs/cgroup/test_ebpf"
@@ -61,12 +73,13 @@ func generateTestTraffic() {
 	}
 	defer os.Remove(cgroupPath)
 
-	// 将当前进程加入 Cgroup
-	if err := os.WriteFile(filepath.Join(cgroupPath, "cgroup.procs"),
-		[]byte(fmt.Sprintf("%d\n", os.Getpid())), 0644); err != nil {
-		log.Printf("write cgroup.procs failed: %v", err)
+	// 获取 cgroup ID（关键代码）
+	cgroupId, err := getCgroupID(cgroupPath)
+	if err != nil {
+		log.Printf("get cgroup id failed: %v", err)
 		return
 	}
+	log.Printf("测试流量绑定的 cgroup ID: %d", cgroupId)
 
 	// TCP IPv4 流量
 	go func() {
