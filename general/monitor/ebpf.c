@@ -7,7 +7,6 @@
 
 char _license[] SEC("license") = "GPL";
 
-// TODO: optimize to BPF_MAP_TYPE_PERCPU_HASH
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
     __type(key, u64);   // cgroup_id
@@ -15,13 +14,12 @@ struct {
     __uint(max_entries, 1024);
 } cgroup_stats SEC(".maps");
 
-#define TC_ACT_OK		0
-
 SEC("cgroup_skb/ingress")
 int cgroup_ingress(struct __sk_buff *skb) {
-    u64 cgroup_id = bpf_skb_cgroup_id();
+    u64 cgroup_id = bpf_skb_cgroup_id(skb);
     u64 *value = bpf_map_lookup_elem(&cgroup_stats, &cgroup_id);
     u64 bytes = skb->len;
+
     if (value) {
         __sync_fetch_and_add(value, bytes);
     } else {
@@ -33,7 +31,7 @@ int cgroup_ingress(struct __sk_buff *skb) {
 
 SEC("cgroup_skb/egress")
 int cgroup_egress(struct __sk_buff *skb) {
-    u64 cgroup_id = bpf_skb_cgroup_id();
+    u64 cgroup_id = bpf_skb_cgroup_id(skb);
     u64 *value = bpf_map_lookup_elem(&cgroup_stats, &cgroup_id);
     u64 bytes = skb->len;
 
@@ -45,4 +43,3 @@ int cgroup_egress(struct __sk_buff *skb) {
     }
     return TC_ACT_OK;
 }
-
