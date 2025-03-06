@@ -25,7 +25,6 @@ const (
 	L3_TCP_SEND_V6
 	L3_UDP_SEND_V6
 	L3_RAW_SEND_V6
-	LN_ALL_TYPES
 )
 
 var AllFlowTypes = []FlowType{
