@@ -11,24 +11,21 @@ char _license[] SEC("license") = "GPL";
 
 
 struct {
-    __uint(type, BPF_MAP_TYPE_HASH);
+    __uint(type, BPF_MAP_TYPE_PERCPU_HASH);
     __type(key, u64);   // cgroup_id
     __type(value, u64); // bytes count
     __uint(max_entries, 1024);
 } cgroup_stats SEC(".maps");
 
+
 SEC("cgroup_skb/ingress")
 int cgroup_ingress(struct __sk_buff *skb) {
     u64 cgroup_id = bpf_skb_cgroup_id(skb);
-    u32 high = (cgroup_id >> 32) & 0xFFFFFFFF; 
-    u32 low = cgroup_id & 0xFFFFFFFF;         
-    bpf_trace_printk("u64 value: %u%u\n", high, low);    
-
     u64 *value = bpf_map_lookup_elem(&cgroup_stats, &cgroup_id);
     u64 bytes = skb->len;
 
     if (value) {
-        __sync_fetch_and_add(value, bytes);
+        *value += bytes;  
     } else {
         u64 init_val = bytes;
         bpf_map_update_elem(&cgroup_stats, &cgroup_id, &init_val, BPF_NOEXIST);
@@ -43,7 +40,7 @@ int cgroup_egress(struct __sk_buff *skb) {
     u64 bytes = skb->len;
 
     if (value) {
-        __sync_fetch_and_add(value, bytes);
+        *value += bytes;  
     } else {
         u64 init_val = bytes;
         bpf_map_update_elem(&cgroup_stats, &cgroup_id, &init_val, BPF_NOEXIST);
