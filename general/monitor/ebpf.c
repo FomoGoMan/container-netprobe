@@ -5,7 +5,7 @@
 #include <bpf/bpf_endian.h>
 // clang-format on
 
-#define TC_ACT_OK 0
+#define TC_ACT_OK 1
 
 char __license[] SEC("license") = "Dual MIT/GPL";
 
