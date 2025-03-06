@@ -1,5 +1,5 @@
 package main
-
+//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -tags linux ebpf ebpf.c
 import (
 	"fmt"
 	"log"
@@ -15,9 +15,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target amd64 traffic ../traffic.c
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target arm64 traffic ../traffic.c
-//go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target arm traffic ../traffic.c
 
 func main() {
 	// 1. 启动测试容器 (Host/Bridge 模式均可)
