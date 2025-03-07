@@ -5,7 +5,7 @@ import (
 	mytypes "ebpf_collector/types"
 	"fmt"
 	"log"
-	"path/filepath"
+	"os"
 	"syscall"
 	"time"
 
@@ -14,17 +14,35 @@ import (
 	"golang.org/x/net/context"
 )
 
+func getCgroupID(cgroupPath string) (uint64, error) {
+	// 1. 获取 cgroup 路径的文件信息
+	fileInfo, err := os.Stat(cgroupPath)
+	if err != nil {
+		return 0, err
+	}
+
+	// 2. 提取 inode 号（类型为 uint64）
+	stat, ok := fileInfo.Sys().(*syscall.Stat_t)
+	if !ok {
+		return 0, fmt.Errorf("无法获取 inode 信息")
+	}
+
+	// 3. inode 号即为 cgroup ID（内核行为）
+	return stat.Ino, nil
+}
 func main() {
 	// 1. 启动测试容器 (Host/Bridge 模式均可)
 	containerID := startContainer()
 	defer stopContainer(containerID)
 
 	// 2. 获取容器的 CGroup ID
-	cgroupID, err := getCgroupID(containerID)
+	cgroupPath := getContainerInfo(containerID)
+	fmt.Printf("目标容器 CGroup Path: %v\n", cgroupPath)
+	cgroupID, err := getCgroupID(cgroupPath)
 	if err != nil {
 		log.Fatalf("获取 CGroup ID 失败: %v", err)
 	}
-	fmt.Printf("目标容器 CGroup ID: %d\n", cgroupID)
+	fmt.Printf("CGroup ID: %d\n", cgroupID)
 
 	// 3. 加载并挂载 监控程序
 	collector, err := monitor.NewCollector()
@@ -75,16 +93,22 @@ func stopContainer(containerID string) {
 	_ = cli.ContainerRemove(ctx, containerID, container.RemoveOptions{})
 }
 
-// 获取容器的 CGroup ID (兼容 Host/Bridge 模式)
-func getCgroupID(containerID string) (uint64, error) {
-	// Docker 容器的 CGroup 路径示例: /sys/fs/cgroup/memory/docker/<container-id>
-	cgroupPath := filepath.Join("/sys/fs/cgroup/memory/docker", containerID)
-
-	var stat syscall.Stat_t
-	if err := syscall.Stat(cgroupPath, &stat); err != nil {
-		return 0, fmt.Errorf("stat %s 失败: %v", cgroupPath, err)
+func getContainerInfo(containerID string) (cgroupPath string) {
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.48"))
+	if err != nil {
+		log.Fatal(err)
 	}
-	return stat.Ino, nil // Ino 即为 cgroup_id
+
+	// 获取容器详细信息
+	info, err := cli.ContainerInspect(context.Background(), containerID)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// 从容器信息中直接获取 CGroup 路径
+	cgroupPath = info.HostConfig.CgroupParent
+	log.Printf("CGroup Path: %s", cgroupPath)
+	return
 }
 
 func printStats(ingress mytypes.FlowCgroup, egress mytypes.FlowCgroup, cgroupID uint64) {
