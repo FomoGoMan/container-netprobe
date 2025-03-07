@@ -34,6 +34,7 @@ func main() {
 	// 1. 启动测试容器 (Host/Bridge 模式均可)
 	containerID := startContainer()
 	defer stopContainer(containerID)
+	fmt.Printf("目标容器 ID: %s\n", containerID)
 
 	// 2. 获取容器的 CGroup ID
 	cgroupPath := getContainerInfo(containerID)
