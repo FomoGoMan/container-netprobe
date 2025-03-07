@@ -62,7 +62,8 @@ type trafficProgramSpecs struct {
 //
 // It can be passed ebpf.CollectionSpec.Assign.
 type trafficMapSpecs struct {
-	CgroupStats *ebpf.MapSpec `ebpf:"cgroup_stats"`
+	EgressStats  *ebpf.MapSpec `ebpf:"egress_stats"`
+	IngressStats *ebpf.MapSpec `ebpf:"ingress_stats"`
 }
 
 // trafficVariableSpecs contains global variables before they are loaded into the kernel.
@@ -91,12 +92,14 @@ func (o *trafficObjects) Close() error {
 //
 // It can be passed to loadTrafficObjects or ebpf.CollectionSpec.LoadAndAssign.
 type trafficMaps struct {
-	CgroupStats *ebpf.Map `ebpf:"cgroup_stats"`
+	EgressStats  *ebpf.Map `ebpf:"egress_stats"`
+	IngressStats *ebpf.Map `ebpf:"ingress_stats"`
 }
 
 func (m *trafficMaps) Close() error {
 	return _TrafficClose(
-		m.CgroupStats,
+		m.EgressStats,
+		m.IngressStats,
 	)
 }
 
