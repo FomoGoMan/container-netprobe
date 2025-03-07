@@ -29,24 +29,35 @@ func main() {
 
 func generateTestTraffic() {
 	go func() {
+		// TCP
 		conn, err := net.Dial("tcp", "example.com:80")
 		if err == nil {
 			defer conn.Close()
-			for i := 0; i < 5000000; i++ {
-				conn.Write([]byte("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n"))
-				time.Sleep(1 * time.Second)
+			req := []byte("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
+			for i := 0; i < 5; i++ { // 减少循环次数便于测试
+				_, err = conn.Write(req)
+				if err != nil {
+					break
+				}
+				// 读取响应
+				buf := make([]byte, 4096)
+				n, _ := conn.Read(buf) // 简单示例，需处理错误
+				_ = n                  // 实际统计时累加 n
 			}
 		}
 	}()
-
-	// UDP IPv4 流量
+	// UDP
 	go func() {
 		addr, _ := net.ResolveUDPAddr("udp4", "8.8.8.8:53")
 		conn, _ := net.DialUDP("udp4", nil, addr)
 		defer conn.Close()
-		for i := 0; i < 5000000; i++ {
-			conn.Write([]byte("test payload"))
-			time.Sleep(1 * time.Second)
+		req := []byte("test payload")
+		for i := 0; i < 5; i++ {
+			_, _ = conn.Write(req)
+			// 读取响应
+			buf := make([]byte, 1024)
+			n, _ := conn.Read(buf) // 简单示例，需处理错误
+			_ = n                  // 实际统计时累加 n
 		}
 	}()
 }
