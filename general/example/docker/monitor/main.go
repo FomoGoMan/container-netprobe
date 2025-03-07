@@ -109,6 +109,10 @@ func getContainerInfo(containerID string) (cgroupPath string) {
 
 	// 从容器信息中直接获取 CGroup 路径
 	cgroupPath = info.HostConfig.CgroupParent
+	if cgroupPath == "" {
+		// 若使用 cgroup v2，路径可能需要拼接
+		cgroupPath = fmt.Sprintf("/sys/fs/cgroup/system.slice/docker-%s.scope", info.ID)
+	}
 	log.Printf("CGroup Path: %s", cgroupPath)
 	return
 }
