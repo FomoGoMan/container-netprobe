@@ -34,7 +34,7 @@ func (c *Collector) load() error {
 
 	rootCgroup := "/sys/fs/cgroup"
 
-	// 挂载 Ingress
+	// link Ingress
 	if l, err := link.AttachCgroup(link.CgroupOptions{
 		Path:    rootCgroup,
 		Attach:  ebpf.AttachCGroupInetIngress,
@@ -45,7 +45,7 @@ func (c *Collector) load() error {
 		c.links["cgroup_skb/ingress"] = l
 	}
 
-	// 挂载 Egress
+	// link Egress
 	if l, err := link.AttachCgroup(link.CgroupOptions{
 		Path:    rootCgroup,
 		Attach:  ebpf.AttachCGroupInetEgress,
@@ -66,19 +66,30 @@ func (c *Collector) Close() {
 	c.objs.Close()
 }
 
-func (c *Collector) Collect() types.FlowCgroup {
-	flows := make(types.FlowCgroup)
+func (c *Collector) Collect() (ingress, egress types.FlowCgroup) {
+	ingress = make(types.FlowCgroup)
+	egress = make(types.FlowCgroup)
+
 	var key uint64
 	var values []uint64
 
-	iter := c.objs.CgroupStats.Iterate()
+	iter := c.objs.trafficMaps.IngressStats.Iterate()
 	for iter.Next(&key, &values) {
 		total := uint64(0)
 		for _, v := range values {
 			total += v
 		}
-		flows[key] = total
+		ingress[key] = total
 	}
 
-	return flows
+	iter = c.objs.trafficMaps.EgressStats.Iterate()
+	for iter.Next(&key, &values) {
+		total := uint64(0)
+		for _, v := range values {
+			total += v
+		}
+		ingress[key] = total
+	}
+
+	return ingress, egress
 }
