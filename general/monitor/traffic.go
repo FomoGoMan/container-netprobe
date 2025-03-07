@@ -88,7 +88,7 @@ func (c *Collector) Collect() (ingress, egress types.FlowCgroup) {
 		for _, v := range values {
 			total += v
 		}
-		ingress[key] = total
+		egress[key] = total
 	}
 
 	return ingress, egress
