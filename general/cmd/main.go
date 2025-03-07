@@ -42,11 +42,12 @@ func main() {
 	}
 }
 
-func printStats(flowMap types.FlowCgroup) {
+func printStats(ingress types.FlowCgroup, egress types.FlowCgroup) {
 	fmt.Println("\n=== Network Traffic Statistics ===")
-	for cGroupId, flows := range flowMap {
+	for cGroupId, flows := range ingress {
 		fmt.Printf("CgroupId: %v\n", cGroupId)
-		fmt.Printf("  All InCome :   %10d bytes\n", flows)
+		fmt.Printf(" Ingress:   %10d bytes\n", flows)
+		fmt.Printf(" Egress:   %10d bytes\n", egress[cGroupId])
 	}
 	fmt.Println("================================")
 }
