@@ -1,6 +1,5 @@
 package monitor
 
-// //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -tags linux ebpf ebpf.c
 // import (
 // 	"fmt"
 // 	"log"
@@ -8,8 +7,6 @@ package monitor
 // 	"syscall"
 // 	"time"
 
-// 	"github.com/cilium/ebpf"
-// 	"github.com/cilium/ebpf/link"
 // 	"github.com/docker/docker/api/types"
 // 	"github.com/docker/docker/api/types/container"
 // 	"github.com/docker/docker/client"
@@ -29,21 +26,19 @@ package monitor
 // 	fmt.Printf("目标容器 CGroup ID: %d\n", cgroupID)
 
 // 	// 3. 加载并挂载 eBPF 程序
-// 	objs := loadEBPF()
-// 	defer objs.Close()
+// 	collector, err := NewCollector()
+// 	if err != nil {
+// 		log.Fatalf("error new collector %v", err)
+// 		return
+// 	}
 
 // 	// 4. 持续打印流量统计
 // 	ticker := time.NewTicker(2 * time.Second)
 // 	defer ticker.Stop()
 
 // 	for range ticker.C {
-// 		var key, value uint64
-// 		iter := objs.cgroup_stats.Iterate()
-// 		if iter.Next(&key, &value) {
-// 			if key == cgroupID {
-// 				fmt.Printf("容器流量统计: %d bytes\n", value)
-// 			}
-// 		}
+// 		flowData := collector.Collect()
+// 		printStats(flowData)
 // 	}
 // }
 
@@ -91,31 +86,11 @@ package monitor
 // 	return stat.Ino, nil // Ino 即为 cgroup_id
 // }
 
-// // 加载 eBPF 程序并返回对象
-// type bpfObjects struct {
-// 	cgroup_stats *ebpf.Map
-// 	Programs     []*ebpf.Program
-// }
-
-// func loadEBPF() *bpfObjects {
-// 	coll, err := ebpf.LoadCollection("ebpf.o")
-// 	if err != nil {
-// 		log.Fatalf("加载 eBPF 失败: %v", err)
+// func printStats(flowMap types.FlowCgroup) {
+// 	fmt.Println("\n=== Network Traffic Statistics ===")
+// 	for cGroupId, flows := range flowMap {
+// 		fmt.Printf("CgroupId: %v\n", cGroupId)
+// 		fmt.Printf("  All InCome :   %10d bytes\n", flows)
 // 	}
-
-// 	// 挂载到根 CGroup (监控所有流量)
-// 	rootCgroup := "/sys/fs/cgroup"
-// 	l, err := link.AttachCgroup(link.CgroupOptions{
-// 		Path:    rootCgroup,
-// 		Program: coll.Programs["cgroup_ingress"],
-// 		Attach:  ebpf.AttachCGroupInetIngress,
-// 	})
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	return &bpfObjects{
-// 		cgroup_stats: coll.Maps["cgroup_stats"],
-// 		Programs:     []*ebpf.Program{l.Program()},
-// 	}
+// 	fmt.Println("================================")
 // }
