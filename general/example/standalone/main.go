@@ -12,6 +12,7 @@ import (
 	"time"
 )
 
+// this code show ingress and egress traffic of all cgroup
 func main() {
 	// 初始化流量采集器
 	collector, err := traffic.NewCollector()
