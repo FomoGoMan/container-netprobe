@@ -35,7 +35,6 @@ func main() {
 	containerID := startContainer()
 	defer stopContainer(containerID)
 	fmt.Printf("目标容器 ID: %s\n", containerID)
-	time.Sleep(50000 * time.Second)
 
 	// 2. 获取容器的 CGroup ID
 	cgroupPath := getContainerInfo(containerID)
