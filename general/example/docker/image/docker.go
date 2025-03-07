@@ -42,7 +42,9 @@ func generateTestTraffic() {
 				// 读取响应
 				buf := make([]byte, 4096)
 				n, _ := conn.Read(buf) // 简单示例，需处理错误
-				_ = n                  // 实际统计时累加 n
+				// print response as readable string
+				fmt.Println(string(buf[:n]))
+				_ = n // 实际统计时累加 n
 			}
 		}
 	}()
