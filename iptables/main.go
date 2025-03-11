@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os/exec"
@@ -16,8 +17,8 @@ import (
 // mkdir -p /sys/fs/cgroup/docker_traffic
 // echo $$ > /sys/fs/cgroup/docker_traffic/cgroup.procs
 // 2.然后用 iptables 统计特定 cgroup
-// iptables -t mangle -A OUTPUT -m cgroup --path docker_traffic
-// iptables -t mangle -A INPUT -m cgroup --path docker_traffic
+// iptables -t mangle -I OUTPUT -m cgroup --path docker_traffic
+// iptables -t mangle -I INPUT -m cgroup --path docker_traffic
 // 这样 docker_traffic 内的进程（包括容器进程）会被统计
 // NOTE：直接使用容器自身的cgroup会有很多额外的进程加入cgroup，导致统计不准确
 // NOTE: 使用 mangle表，勿使用filters表因为docker或者k8s有时会在你前面插入规则，并且统计会被重置
@@ -127,7 +128,7 @@ func installCgroupTools() error {
 
 // 使用 cgcreate 创建 cgroup
 func createCgroup(path string) error {
-	cmd := exec.Command("cgcreate", "-g", "cpu,memory:/"+path)
+	cmd := exec.Command("cgcreate", "-g", "cpu:/"+path)
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("cgcreate failed: %v", err)
 	}
@@ -135,7 +136,8 @@ func createCgroup(path string) error {
 }
 
 func getCustomCgroupPath(container string) string {
-	return fmt.Sprintf("/sys/fs/cgroup/%s/", getCustomCgroupName(container))
+	return "/sys/fs/cgroup/docker_traffic"
+	// return fmt.Sprintf("/sys/fs/cgroup/cpu/%s/", getCustomCgroupName(container))
 }
 
 func getCustomCgroupName(container string) string {
@@ -145,8 +147,12 @@ func getCustomCgroupName(container string) string {
 // mkdir -p /sys/fs/cgroup/your-custom-cgroup-name/
 // echo pid > /sys/fs/cgroup//your-custom-cgroup-name/cgroup.procs
 func bindContainerToCgroup(containerPID string, containerID string) error {
+	stdErr := &bytes.Buffer{}
+
 	cmd := exec.Command("mkdir", "-p", getCustomCgroupPath(containerID))
+	cmd.Stderr = stdErr
 	if err := cmd.Run(); err != nil {
+		fmt.Printf("Error: %v, Stderr: %s\n", err, stdErr.String())
 		return err
 	}
 	cmd = exec.Command("echo", containerPID, ">", getCustomCgroupPath(containerID)+"/cgroup.procs")
