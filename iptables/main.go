@@ -66,11 +66,11 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 		ipt:         ipt,
 	}
 
-	err = createCGroupEnsureCommand(getCustomCgroupName(containerID))
-	if err != nil {
-		fmt.Printf("Failed to create cgroup: %v, target %v\n", err, getCustomCgroupName(containerID))
-		return nil, err
-	}
+	// err = createCGroupEnsureCommand(getCustomCgroupName(containerID))
+	// if err != nil {
+	// 	fmt.Printf("Failed to create cgroup: %v, target %v\n", err, getCustomCgroupName(containerID))
+	// 	return nil, err
+	// }
 
 	// 根据网络模式初始化参数
 	switch mode {
@@ -136,42 +136,33 @@ func createCgroup(path string) error {
 }
 
 func getCustomCgroupPath(container string) string {
-	return "/sys/fs/cgroup/docker_traffic"
+	return "/sys/fs/cgroup/cpu/docker_traffic"
 	// return fmt.Sprintf("/sys/fs/cgroup/cpu/%s/", getCustomCgroupName(container))
 }
 
 func getCustomCgroupName(container string) string {
-	return fmt.Sprintf("Monitor_Docker_%v", container)
+	return "docker_traffic"
+	// return fmt.Sprintf("Monitor_Docker_%v", container)
 }
 
 // mkdir -p /sys/fs/cgroup/your-custom-cgroup-name/
 // echo pid > /sys/fs/cgroup//your-custom-cgroup-name/cgroup.procs
 func bindContainerToCgroup(containerPID string, containerID string) error {
-	stdErr := &bytes.Buffer{}
 
-	cmd := exec.Command("mkdir", "-p", getCustomCgroupPath(containerID))
-	cmd.Stderr = stdErr
+	cmd := exec.Command("cgcreate", "-g", fmt.Sprintf("cpu:/%s", getCustomCgroupName(containerID)))
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error: %v, Stderr: %s\n", err, stdErr.String())
+		fmt.Printf("cgcreate error: %v\n", err)
+		return err
+	}
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		fmt.Printf("Error: %v, Stderr: %s\n", err, stderr.String())
 		return err
 	}
 	cmd = exec.Command("echo", containerPID, ">", getCustomCgroupPath(containerID)+"/cgroup.procs")
 	return cmd.Run()
-
-	// cmd := exec.Command("cgcreate", "-g", fmt.Sprintf("cpu,memory:/", getCustomCgroupName(containerID)))
-	// if err := cmd.Run(); err != nil {
-	// 	fmt.Printf("cgcreate error: %v\n", err)
-	// 	return err
-	// }
-	// return nil
-	// 	var stderr bytes.Buffer
-	// cmd.Stderr = &stderr
-	// if err := cmd.Run(); err != nil {
-	//     fmt.Printf("Error: %v, Stderr: %s\n", err, stderr.String())
-	//     return err
-	// }
-	// cmd = exec.Command("echo", containerPID, ">", cgroupPath+"/cgroup.procs")
-	// return cmd.Run()
 }
 
 // 设置监控规则
@@ -196,7 +187,8 @@ func (m *ContainerMonitor) setupHostRules() error {
 	}
 
 	// out flow (upstream)
-	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--path", getCustomCgroupPath(m.containerID)); err != nil {
+	// if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--path", getCustomCgroupPath(m.containerID)); err != nil {
+	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "cgroup", "--path", getCustomCgroupPath(m.containerID)); err != nil {
 		return err
 	}
 
@@ -235,8 +227,9 @@ func (m *ContainerMonitor) GetStats() (inBytes, outBytes uint64, err error) {
 func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	var totalIn, totalOut uint64
 
-	rules, _ := m.ipt.ListWithCounters("filter", "INPUT")
+	rules, _ := m.ipt.ListWithCounters("mangle", "INPUT")
 	for _, rule := range rules {
+		fmt.Printf("(INPUT)Rule: %s\n", rule)
 		if strings.Contains(rule, m.containerID) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 8 {
@@ -246,8 +239,9 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 		}
 	}
 
-	rules, _ = m.ipt.ListWithCounters("filter", "OUTPUT")
+	rules, _ = m.ipt.ListWithCounters("mangle", "OUTPUT")
 	for _, rule := range rules {
+		fmt.Printf("(OUTPUT)Rule: %s\n", rule)
 		if strings.Contains(rule, m.containerID) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 8 {
