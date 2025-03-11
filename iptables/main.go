@@ -145,24 +145,25 @@ func getCustomCgroupName(container string) string {
 	// return fmt.Sprintf("Monitor_Docker_%v", container)
 }
 
-// mkdir -p /sys/fs/cgroup/your-custom-cgroup-name/
-// echo pid > /sys/fs/cgroup//your-custom-cgroup-name/cgroup.procs
 func bindContainerToCgroup(containerPID string, containerID string) error {
-
 	cmd := exec.Command("cgcreate", "-g", fmt.Sprintf("cpu:/%s", getCustomCgroupName(containerID)))
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("cgcreate error: %v\n", err)
+		fmt.Printf("cgcreate error: %v, Stderr: %s\n", err, stderr.String())
 		return err
 	}
 
-	var stderr bytes.Buffer
+	cmd = exec.Command("sh", "-c", fmt.Sprintf("echo %s > %s/cgroup.procs", containerPID, getCustomCgroupPath(containerID)))
 	cmd.Stderr = &stderr
+
 	if err := cmd.Run(); err != nil {
 		fmt.Printf("Error: %v, Stderr: %s\n", err, stderr.String())
 		return err
 	}
-	cmd = exec.Command("echo", containerPID, ">", getCustomCgroupPath(containerID)+"/cgroup.procs")
-	return cmd.Run()
+
+	return nil
 }
 
 // 设置监控规则
