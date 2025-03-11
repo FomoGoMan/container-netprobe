@@ -81,7 +81,6 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 		if err := bindContainerToCgroup(strconv.Itoa(pid), containerID); err != nil {
 			return nil, err
 		}
-		panic("success")
 	}
 
 	return monitor, nil
