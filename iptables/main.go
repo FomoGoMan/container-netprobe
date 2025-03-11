@@ -235,9 +235,9 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 		//TODO: remove hard code of "cpu/docker_traffic"
 		if strings.Contains(rule, "cpu/docker_traffic") {
 			fields := strings.Fields(rule)
-			if len(fields) >= 8 {
+			if len(fields) >= 9 {
 
-				bytes, err := strconv.ParseUint(fields[7], 10, 64)
+				bytes, err := strconv.ParseUint(fields[8], 10, 64)
 				if err != nil {
 					return 0, 0, fmt.Errorf("failed to parse input bytes: %v", err)
 				}
@@ -252,8 +252,8 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 		//TODO: remove hard code of "cpu/docker_traffic"
 		if strings.Contains(rule, "cpu/docker_traffic") {
 			fields := strings.Fields(rule)
-			if len(fields) >= 8 && fields[0] == "-A" {
-				bytes, err := strconv.ParseUint(fields[7], 10, 64)
+			if len(fields) >= 9 {
+				bytes, err := strconv.ParseUint(fields[9], 10, 64)
 				if err != nil {
 					return 0, 0, fmt.Errorf("failed to parse output bytes: %v", err)
 				}
@@ -286,16 +286,6 @@ func getContainerPID(containerID string) (int, error) {
 		return 0, err
 	}
 	return strconv.Atoi(strings.TrimSpace(string(out)))
-}
-
-func parseCounter(s string) (uint64, uint64, error) {
-	parts := strings.Split(s, ":")
-	if len(parts) != 2 {
-		return 0, 0, fmt.Errorf("invalid counter format")
-	}
-	in, _ := strconv.ParseUint(parts[0], 10, 64)
-	out, _ := strconv.ParseUint(parts[1], 10, 64)
-	return in, out, nil
 }
 
 // 示例用法
