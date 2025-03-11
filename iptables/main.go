@@ -185,13 +185,13 @@ func (m *ContainerMonitor) Setup() error {
 
 func (m *ContainerMonitor) setupHostRules() error {
 	// In flow (downstream)
-	if err := m.ipt.Insert("mangle", "INPUT", 1, "-m", "cgroup", "--path", getCustomCgroupPath(m.containerID)); err != nil {
+	if err := m.ipt.Insert("mangle", "INPUT", 1, "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID)); err != nil {
 		return err
 	}
 
 	// out flow (upstream)
 	// if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--path", getCustomCgroupPath(m.containerID)); err != nil {
-	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "cgroup", "--path", getCustomCgroupPath(m.containerID)); err != nil {
+	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID)); err != nil {
 		return err
 	}
 
@@ -204,11 +204,11 @@ func (m *ContainerMonitor) Cleanup() {
 	case BridgeMode:
 		panic("cleanup err: traffic monitoring in bridge mod using iptables is not implemented")
 	case HostMode:
-		err := m.ipt.Delete("mangle", "INPUT", "-m", "cgroup", "--path", getCustomCgroupPath(m.containerID))
+		err := m.ipt.Delete("mangle", "INPUT", "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID))
 		if err != nil {
 			log.Printf("Delete INPUT Rule Error: %v", err)
 		}
-		err = m.ipt.Delete("mangle", "OUTPUT", "-m", "cgroup", "--path", getCustomCgroupPath(m.containerID))
+		err = m.ipt.Delete("mangle", "OUTPUT", "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID))
 		if err != nil {
 			log.Printf("Delete OUTPUT Rule Error: %v", err)
 		}
