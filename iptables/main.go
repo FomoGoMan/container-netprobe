@@ -253,7 +253,7 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 		if strings.Contains(rule, "cpu/docker_traffic") {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
-				bytes, err := strconv.ParseUint(fields[9], 10, 64)
+				bytes, err := strconv.ParseUint(fields[8], 10, 64)
 				if err != nil {
 					return 0, 0, fmt.Errorf("failed to parse output bytes: %v", err)
 				}
