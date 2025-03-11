@@ -148,18 +148,20 @@ func getCustomCgroupName(container string) string {
 func bindContainerToCgroup(containerPID string, containerID string) error {
 	cmd := exec.Command("cgcreate", "-g", fmt.Sprintf("cpu:/%s", getCustomCgroupName(containerID)))
 	var stderr bytes.Buffer
+	var stdout bytes.Buffer
 	cmd.Stderr = &stderr
+	cmd.Stdout = &stdout
 
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("cgcreate error: %v, Stderr: %s\n", err, stderr.String())
+		fmt.Printf("cgcreate error: %v, Stderr: %s, stdout: %s\n", err, stderr.String(), stdout.String())
 		return err
 	}
 
 	cmd = exec.Command("sh", "-c", fmt.Sprintf("echo %s > %s/cgroup.procs", containerPID, getCustomCgroupPath(containerID)))
 	cmd.Stderr = &stderr
-
+	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error: %v, Stderr: %s\n", err, stderr.String())
+		fmt.Printf("Error: %v, Stderr: %s, Stdout: %s\n", err, stderr.String(), stdout.String())
 		return err
 	}
 
