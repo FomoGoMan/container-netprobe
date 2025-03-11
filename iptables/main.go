@@ -231,7 +231,7 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 
 	rules, _ := m.ipt.ListWithCounters("mangle", "INPUT")
 	for _, rule := range rules {
-		fmt.Printf("(INPUT)Rule: %s\n", rule)
+		// fmt.Printf("(INPUT)Rule: %s\n", rule)
 		//TODO: remove hard code of "cpu/docker_traffic"
 		if strings.Contains(rule, "cpu/docker_traffic") {
 			fields := strings.Fields(rule)
@@ -248,7 +248,7 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 
 	rules, _ = m.ipt.ListWithCounters("mangle", "OUTPUT")
 	for _, rule := range rules {
-		fmt.Printf("(OUTPUT)Rule: %s\n", rule)
+		// fmt.Printf("(OUTPUT)Rule: %s\n", rule)
 		//TODO: remove hard code of "cpu/docker_traffic"
 		if strings.Contains(rule, "cpu/docker_traffic") {
 			fields := strings.Fields(rule)
