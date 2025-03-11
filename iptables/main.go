@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -292,13 +293,13 @@ func parseCounter(s string) (uint64, uint64, error) {
 
 // 示例用法
 func main() {
-	// if len(os.Args) < 2 {
-	// 	fmt.Println("Usage: ./monitor <container-id>")
-	// 	return
-	// }
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ./monitor <container-id>")
+		return
+	}
 
-	// monitor, err := NewMonitor(os.Args[1])
-	monitor, err := NewMonitor("1ed1c00b4e2d")
+	monitor, err := NewMonitor(os.Args[1])
+	// monitor, err := NewMonitor("1ed1c00b4e2d")
 	if err != nil {
 		log.Fatal(err)
 	}
