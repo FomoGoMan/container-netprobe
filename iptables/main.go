@@ -191,7 +191,7 @@ func (m *ContainerMonitor) setupHostRules() error {
 
 	// out flow (upstream)
 	// if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--path", getCustomCgroupPath(m.containerID)); err != nil {
-	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID)); err != nil {
+	if err := m.ipt.Insert("mangle", "OUTPUT", 1, "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID)); err != nil {
 		return err
 	}
 
