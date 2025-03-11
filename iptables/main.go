@@ -288,7 +288,6 @@ func getContainerPID(containerID string) (int, error) {
 	return strconv.Atoi(strings.TrimSpace(string(out)))
 }
 
-// 示例用法
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: ./monitor <container-id>")

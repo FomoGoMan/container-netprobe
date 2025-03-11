@@ -4,6 +4,7 @@ go 1.23.4
 
 require (
 	github.com/cilium/ebpf v0.17.3
+	github.com/coreos/go-iptables v0.8.0
 	github.com/docker/docker v28.0.1+incompatible
 	github.com/shirou/gopsutil/v4 v4.25.2
 	golang.org/x/net v0.35.0
