@@ -226,18 +226,22 @@ func (m *ContainerMonitor) GetStats() (inBytes, outBytes uint64, err error) {
 		return 0, 0, fmt.Errorf("unsupported network mode")
 	}
 }
-
 func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	var totalIn, totalOut uint64
 
 	rules, _ := m.ipt.ListWithCounters("mangle", "INPUT")
 	for _, rule := range rules {
 		fmt.Printf("(INPUT)Rule: %s\n", rule)
-		if strings.Contains(rule, m.containerID) {
+		//TODO: remove hard code of "cpu/docker_traffic"
+		if strings.Contains(rule, "cpu/docker_traffic") {
 			fields := strings.Fields(rule)
 			if len(fields) >= 8 {
-				in, _, _ := parseCounter(fields[1])
-				totalIn += in
+
+				bytes, err := strconv.ParseUint(fields[7], 10, 64)
+				if err != nil {
+					return 0, 0, fmt.Errorf("failed to parse input bytes: %v", err)
+				}
+				totalIn += bytes
 			}
 		}
 	}
@@ -245,11 +249,15 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	rules, _ = m.ipt.ListWithCounters("mangle", "OUTPUT")
 	for _, rule := range rules {
 		fmt.Printf("(OUTPUT)Rule: %s\n", rule)
-		if strings.Contains(rule, m.containerID) {
+		//TODO: remove hard code of "cpu/docker_traffic"
+		if strings.Contains(rule, "cpu/docker_traffic") {
 			fields := strings.Fields(rule)
-			if len(fields) >= 8 {
-				_, out, _ := parseCounter(fields[1])
-				totalOut += out
+			if len(fields) >= 8 && fields[0] == "-A" {
+				bytes, err := strconv.ParseUint(fields[7], 10, 64)
+				if err != nil {
+					return 0, 0, fmt.Errorf("failed to parse output bytes: %v", err)
+				}
+				totalOut += bytes
 			}
 		}
 	}
