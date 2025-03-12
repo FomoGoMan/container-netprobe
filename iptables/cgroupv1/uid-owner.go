@@ -116,9 +116,9 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	rules, _ := m.ipt.ListWithCounters("filter", "OUTPUT")
 	for _, rule := range rules {
 		fmt.Printf("(OUTPUT)Rule: %s\n", rule)
-		fmt.Printf("MATCH:[%v]\n", fmt.Sprintf("owner UID match %v", m.uid))
+		fmt.Printf("MATCH:[%v]\n", fmt.Sprintf("--uid-owner %v", m.uid))
 		//TODO: remove hard code of "cpu/docker_traffic"
-		if strings.Contains(rule, fmt.Sprintf("owner UID match %v", m.uid)) {
+		if strings.Contains(rule, fmt.Sprintf("--uid-owner %v", m.uid)) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
 				bytes, err := strconv.ParseUint(fields[8], 10, 64)
