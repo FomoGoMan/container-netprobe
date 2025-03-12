@@ -34,7 +34,8 @@ func generateTestTraffic() {
 		if err == nil {
 			defer conn.Close()
 			req := []byte("GET / HTTP/1.1\r\nHost: example.com\r\n\r\n")
-			for i := 0; i < 5; i++ { // 减少循环次数便于测试
+			for { // 减少循环次数便于测试
+				time.Sleep(1 * time.Second)
 				_, err = conn.Write(req)
 				if err != nil {
 					break
@@ -54,7 +55,8 @@ func generateTestTraffic() {
 		conn, _ := net.DialUDP("udp4", nil, addr)
 		defer conn.Close()
 		req := []byte("test payload")
-		for i := 0; i < 5; i++ {
+		for {
+			time.Sleep(1 * time.Second)
 			_, _ = conn.Write(req)
 			// 读取响应
 			buf := make([]byte, 1024)
