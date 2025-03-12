@@ -79,7 +79,7 @@ func (m *ContainerMonitor) setupHostRules() error {
 
 	// out flow (upstream)
 	//  iptables -A OUTPUT -m owner --uid-owner 1000
-	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--uid-owner", strconv.Itoa(m.uid)); err != nil {
+	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--uid-owner", strconv.Itoa(m.uid), "-j", "ACCEPT"); err != nil {
 		return err
 	}
 
@@ -92,7 +92,7 @@ func (m *ContainerMonitor) Cleanup() {
 	case BridgeMode:
 		panic("cleanup err: traffic monitoring in bridge mod using iptables is not implemented")
 	case HostMode:
-		err := m.ipt.Delete("mangle", "OUTPUT", "-m", "owner", "--uid-owner", strconv.Itoa(m.uid))
+		err := m.ipt.Delete("mangle", "OUTPUT", "-m", "owner", "--uid-owner", strconv.Itoa(m.uid), "-j", "ACCEPT")
 		if err != nil {
 			log.Printf("Delete OUTPUT Rule Error: %v", err)
 		}
