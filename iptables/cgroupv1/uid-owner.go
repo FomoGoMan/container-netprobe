@@ -21,12 +21,12 @@ type ContainerMonitor struct {
 	containerID string
 	networkMode string
 	pid         int
-	uid         string // container uid
+	uid         int // container uid
 	cgroupPath  string
 	ipt         *iptables.IPTables
 }
 
-func NewMonitor(containerID string, uid string) (*ContainerMonitor, error) {
+func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	ipt, err := iptables.New()
 	if err != nil {
 		return nil, err
@@ -48,9 +48,10 @@ func NewMonitor(containerID string, uid string) (*ContainerMonitor, error) {
 		containerID: containerID,
 		networkMode: mode,
 		pid:         pid,
-		uid:         uid,
+		uid:         getUidOf(pid),
 		ipt:         ipt,
 	}
+	fmt.Printf("Uid of container %v: %d\n", containerID, monitor.uid)
 
 	switch mode {
 	case BridgeMode:
@@ -78,7 +79,7 @@ func (m *ContainerMonitor) setupHostRules() error {
 
 	// out flow (upstream)
 	//  iptables -A OUTPUT -m owner --uid-owner 1000
-	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--uid-owner", m.uid); err != nil {
+	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--uid-owner", strconv.Itoa(m.uid)); err != nil {
 		return err
 	}
 
@@ -91,7 +92,7 @@ func (m *ContainerMonitor) Cleanup() {
 	case BridgeMode:
 		panic("cleanup err: traffic monitoring in bridge mod using iptables is not implemented")
 	case HostMode:
-		err := m.ipt.Delete("mangle", "OUTPUT", "-m", "owner", "--uid-owner", m.uid)
+		err := m.ipt.Delete("mangle", "OUTPUT", "-m", "owner", "--uid-owner", strconv.Itoa(m.uid))
 		if err != nil {
 			log.Printf("Delete OUTPUT Rule Error: %v", err)
 		}
@@ -155,13 +156,30 @@ func getContainerPID(containerID string) (int, error) {
 	return strconv.Atoi(strings.TrimSpace(string(out)))
 }
 
+func getUidOf(pid int) int {
+	cmd := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "uid=")
+	out, err := cmd.Output()
+	if err != nil {
+		return 0
+	}
+	fields := strings.Fields(string(out))
+	if len(fields) >= 1 {
+		uid, err := strconv.Atoi(fields[0])
+		if err != nil {
+			return 0
+		}
+		return uid
+	}
+	return 0
+}
+
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Println("Usage: ./monitor <container-id> <container-uid>")
+		fmt.Println("Usage: ./monitor <container-id> ")
 		return
 	}
 
-	monitor, err := NewMonitor(os.Args[1], os.Args[2])
+	monitor, err := NewMonitor(os.Args[1])
 	// monitor, err := NewMonitor("1ed1c00b4e2d")
 	if err != nil {
 		log.Fatal(err)
