@@ -174,7 +174,7 @@ func getUidOf(pid int) int {
 }
 
 func main() {
-	if len(os.Args) < 3 {
+	if len(os.Args) < 2 {
 		fmt.Println("Usage: ./monitor <container-id> ")
 		return
 	}
