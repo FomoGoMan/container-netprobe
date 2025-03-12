@@ -99,7 +99,7 @@ func (m *ContainerMonitor) Cleanup() {
 	}
 }
 
-func (m *ContainerMonitor) GetStats() (inBytes, outBytes uint64, err error) {
+func (m *ContainerMonitor) GetStats() (outBytes uint64, err error) {
 	switch m.networkMode {
 	case BridgeMode:
 		panic("not implemented")
@@ -107,11 +107,11 @@ func (m *ContainerMonitor) GetStats() (inBytes, outBytes uint64, err error) {
 	case HostMode:
 		return m.getHostStats()
 	default:
-		return 0, 0, fmt.Errorf("unsupported network mode")
+		return 0, fmt.Errorf("unsupported network mode")
 	}
 }
-func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
-	var totalIn, totalOut uint64
+func (m *ContainerMonitor) getHostStats() (uint64, error) {
+	var totalOut uint64
 
 	rules, _ := m.ipt.ListWithCounters("filter", "OUTPUT")
 	for _, rule := range rules {
@@ -123,14 +123,14 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 			if len(fields) >= 9 {
 				bytes, err := strconv.ParseUint(fields[8], 10, 64)
 				if err != nil {
-					return 0, 0, fmt.Errorf("failed to parse output bytes: %v", err)
+					return 0, fmt.Errorf("failed to parse output bytes: %v", err)
 				}
 				totalOut += bytes
 			}
 		}
 	}
 
-	return totalIn, totalOut, nil
+	return totalOut, nil
 }
 
 func getNetworkMode(containerID string) (string, error) {
@@ -194,12 +194,12 @@ func main() {
 	defer ticker.Stop()
 
 	for range ticker.C {
-		in, out, err := monitor.GetStats()
+		out, err := monitor.GetStats()
 		if err != nil {
 			log.Printf("Error: %v", err)
 			continue
 		}
-		fmt.Printf("[%s] Traffic IN: %d bytes, OUT: %d bytes\n",
-			time.Now().Format("15:04:05"), in, out)
+		fmt.Printf("[%s]  OUT: %d bytes\n",
+			time.Now().Format("15:04:05"), out)
 	}
 }
