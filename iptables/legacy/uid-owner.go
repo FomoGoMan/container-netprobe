@@ -108,6 +108,7 @@ func (m *ContainerMonitor) GetStats() (outBytes uint64, err error) {
 		return 0, fmt.Errorf("unsupported network mode")
 	}
 }
+
 func (m *ContainerMonitor) getHostStats() (uint64, error) {
 	var totalOut uint64
 

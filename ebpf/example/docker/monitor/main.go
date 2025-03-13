@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ebpf_collector/general/monitor"
+	"ebpf_collector/ebpf/monitor"
 	mytypes "ebpf_collector/types"
 	"fmt"
 	"log"

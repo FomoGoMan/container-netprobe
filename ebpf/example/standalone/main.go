@@ -1,7 +1,7 @@
 package main
 
 import (
-	traffic "ebpf_collector/general/monitor"
+	traffic "ebpf_collector/ebpf/monitor"
 	"ebpf_collector/types"
 	"fmt"
 	"log"
@@ -14,21 +14,17 @@ import (
 
 // this code show ingress and egress traffic of all cgroup
 func main() {
-	// 初始化流量采集器
 	collector, err := traffic.NewCollector()
 	if err != nil {
 		log.Fatalf("Failed to create collector: %v", err)
 	}
 	defer collector.Close()
 
-	// 启动流量生成器
 	go generateTestTraffic()
 
-	// 定时输出统计信息
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
-	// 处理退出信号
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
 
@@ -67,7 +63,7 @@ func getCgroupID(path string) (uint64, error) {
 }
 
 func generateTestTraffic() {
-	// 创建测试 Cgroup
+
 	cgroupPath := "/sys/fs/cgroup/test_ebpf"
 	if err := os.Mkdir(cgroupPath, 0755); err != nil && !os.IsExist(err) {
 		log.Printf("create cgroup failed: %v", err)
@@ -75,7 +71,6 @@ func generateTestTraffic() {
 	}
 	defer os.Remove(cgroupPath)
 
-	// 获取 cgroup ID（关键代码）
 	cgroupId, err := getCgroupID(cgroupPath)
 	if err != nil {
 		log.Printf("get cgroup id failed: %v", err)
@@ -95,7 +90,6 @@ func generateTestTraffic() {
 		}
 	}()
 
-	// UDP IPv4 流量
 	go func() {
 		addr, _ := net.ResolveUDPAddr("udp4", "8.8.8.8:53")
 		conn, _ := net.DialUDP("udp4", nil, addr)
