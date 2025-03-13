@@ -127,12 +127,12 @@ func createCgroup(path string) error {
 }
 
 func getCustomCgroupPath(container string) string {
-	return "/sys/fs/cgroup/cpu/docker_traffic"
-	// return fmt.Sprintf("/sys/fs/cgroup/cpu/%s/", getCustomCgroupName(container))
+	// return "/sys/fs/cgroup/cpu/docker_traffic"
+	return fmt.Sprintf("/sys/fs/cgroup/cpu/%s/", getCustomCgroupName(container))
 }
 
 func getCustomCgroupName(container string) string {
-	return "docker_traffic"
+	return fmt.Sprintf("docker_traffic_%s", container)
 	// return fmt.Sprintf("Monitor_Docker_%v", container)
 }
 
