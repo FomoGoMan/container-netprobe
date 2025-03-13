@@ -92,6 +92,8 @@ func (m *ContainerMonitor) Cleanup() {
 		if err != nil {
 			log.Printf("Delete OUTPUT Rule Error: %v", err)
 		}
+	default:
+		panic("unsupported network mode")
 	}
 }
 

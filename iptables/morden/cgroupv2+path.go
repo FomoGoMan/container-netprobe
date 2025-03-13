@@ -33,21 +33,19 @@ const (
 )
 
 type ContainerMonitor struct {
-	containerID string // 容器ID
-	networkMode string // 网络模式
-	pid         int    // 容器进程PID
+	containerID string
+	networkMode string
+	pid         int
 	cgroupPath  string
 	ipt         *iptables.IPTables
 }
 
-// 创建监控器
 func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	ipt, err := iptables.New()
 	if err != nil {
 		return nil, err
 	}
 
-	// 获取容器基础信息
 	mode, err := getNetworkMode(containerID)
 	if err != nil {
 		return nil, err
@@ -67,13 +65,6 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 		ipt:         ipt,
 	}
 
-	// err = createCGroupEnsureCommand(getCustomCgroupName(containerID))
-	// if err != nil {
-	// 	fmt.Printf("Failed to create cgroup: %v, target %v\n", err, getCustomCgroupName(containerID))
-	// 	return nil, err
-	// }
-
-	// 根据网络模式初始化参数
 	switch mode {
 	case BridgeMode:
 		panic("traffic monitoring in bridge mod using iptables is not implemented")
@@ -87,7 +78,7 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 }
 
 func createCGroupEnsureCommand(cgroupPath string) error {
-	// 检查 cgcreate 是否存在
+
 	if !commandExists("cgcreate") {
 		fmt.Println("cgcreate not found, installing cgroup-tools...")
 		if err := installCgroupTools(); err != nil {
@@ -96,7 +87,6 @@ func createCGroupEnsureCommand(cgroupPath string) error {
 		}
 	}
 
-	// 使用 cgcreate 创建 cgroup
 	if err := createCgroup(cgroupPath); err != nil {
 		fmt.Printf("Failed to create cgroup: %v\n", err)
 		return err
@@ -106,7 +96,6 @@ func createCGroupEnsureCommand(cgroupPath string) error {
 	return nil
 }
 
-// 检查命令是否存在
 func commandExists(cmd string) bool {
 	_, err := exec.LookPath(cmd)
 	return err == nil
@@ -126,7 +115,6 @@ func installCgroupTools() error {
 	return nil
 }
 
-// 使用 cgcreate 创建 cgroup
 func createCgroup(path string) error {
 	cmd := exec.Command("cgcreate", "-g", "cpu:/"+path)
 	if err := cmd.Run(); err != nil {
@@ -168,9 +156,7 @@ func bindContainerToCgroup(containerPID string, containerID string) error {
 	return nil
 }
 
-// 设置监控规则
 func (m *ContainerMonitor) Setup() error {
-	// 清理旧规则
 	m.Cleanup()
 
 	switch m.networkMode {
@@ -190,7 +176,6 @@ func (m *ContainerMonitor) setupHostRules() error {
 	}
 
 	// out flow (upstream)
-	// if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--path", getCustomCgroupPath(m.containerID)); err != nil {
 	if err := m.ipt.Insert("mangle", "OUTPUT", 1, "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID)); err != nil {
 		return err
 	}
@@ -198,7 +183,6 @@ func (m *ContainerMonitor) setupHostRules() error {
 	return nil
 }
 
-// 清理规则
 func (m *ContainerMonitor) Cleanup() {
 	switch m.networkMode {
 	case BridgeMode:
@@ -219,7 +203,6 @@ func (m *ContainerMonitor) GetStats() (inBytes, outBytes uint64, err error) {
 	switch m.networkMode {
 	case BridgeMode:
 		panic("not implemented")
-		// return m.getBridgeStats()
 	case HostMode:
 		return m.getHostStats()
 	default:
@@ -232,7 +215,7 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	rules, _ := m.ipt.ListWithCounters("mangle", "INPUT")
 	for _, rule := range rules {
 		// fmt.Printf("(INPUT)Rule: %s\n", rule)
-		//TODO: remove hard code of "cpu/docker_traffic"
+		//TODO: remove hard code string "cpu/docker_traffic"
 		if strings.Contains(rule, "cpu/docker_traffic") {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
@@ -249,7 +232,7 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	rules, _ = m.ipt.ListWithCounters("mangle", "OUTPUT")
 	for _, rule := range rules {
 		// fmt.Printf("(OUTPUT)Rule: %s\n", rule)
-		//TODO: remove hard code of "cpu/docker_traffic"
+		//TODO: remove hard code string "cpu/docker_traffic"
 		if strings.Contains(rule, "cpu/docker_traffic") {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
@@ -295,7 +278,7 @@ func main() {
 	}
 
 	monitor, err := NewMonitor(os.Args[1])
-	// monitor, err := NewMonitor("1ed1c00b4e2d")
+
 	if err != nil {
 		log.Fatal(err)
 	}
