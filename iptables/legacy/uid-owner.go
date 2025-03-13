@@ -70,7 +70,7 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	return monitor, nil
 }
 
-func (m *ContainerMonitor) Setup() error {
+func (m *ContainerMonitor) SetUp() error {
 	m.Cleanup()
 
 	switch m.networkMode {
@@ -85,7 +85,6 @@ func (m *ContainerMonitor) Setup() error {
 
 func (m *ContainerMonitor) setupHostRules() error {
 	// out flow (upstream)
-
 	if err := m.ipt.Insert(networkTable, "OUTPUT", 1, "-m", "owner", "--uid-owner", strconv.Itoa(m.uid), "-j", "ACCEPT"); err != nil {
 		return err
 	}

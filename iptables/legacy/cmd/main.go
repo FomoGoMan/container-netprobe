@@ -21,7 +21,7 @@ func main() {
 	}
 	defer monitor.Cleanup()
 
-	if err := monitor.Setup(); err != nil {
+	if err := monitor.SetUp(); err != nil {
 		log.Fatal(err)
 	}
 

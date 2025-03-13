@@ -24,6 +24,11 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	err = monitor.SetUp()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	defer monitor.Cleanup()
 
 	go func() {

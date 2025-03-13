@@ -180,7 +180,7 @@ func bindContainerToCgroup(containerPID string, containerID string) error {
 	return nil
 }
 
-func (m *ContainerMonitor) Setup() error {
+func (m *ContainerMonitor) SetUp() error {
 	m.Cleanup()
 
 	switch m.networkMode {
@@ -318,7 +318,7 @@ func main() {
 	}
 	defer monitor.Cleanup()
 
-	if err := monitor.Setup(); err != nil {
+	if err := monitor.SetUp(); err != nil {
 		log.Fatal(err)
 	}
 

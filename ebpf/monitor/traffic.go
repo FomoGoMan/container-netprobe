@@ -121,3 +121,7 @@ func (c *EBPFCollector) CollectTotal(cgroupID uint64) (in, out uint64) {
 	}
 	return
 }
+
+func (c *EBPFCollector) SetUp() error {
+	return nil
+}
