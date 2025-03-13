@@ -2,6 +2,7 @@ package legacy
 
 import (
 	"ebpf_collector/general"
+	helper "ebpf_collector/pkg/cgroup"
 	"fmt"
 	"log"
 	"os/exec"
@@ -29,6 +30,12 @@ type ContainerMonitor struct {
 }
 
 func NewMonitor(containerID string) (*ContainerMonitor, error) {
+	if f, err := helper.IptablesSupportsOwnerUidMatch(); err != nil {
+		return nil, fmt.Errorf("IptablesSupportsOwnerUidMatch failed: %v", err)
+	} else if !f {
+		return nil, fmt.Errorf("iptables owner uid match feature not supported")
+	}
+
 	ipt, err := iptables.New()
 	if err != nil {
 		return nil, err
