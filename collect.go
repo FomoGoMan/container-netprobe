@@ -38,7 +38,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	// linux 4.x, iptables + cgroup v2
 	collectorIpt, err := modern.NewMonitor(containerId)
 	if err == nil {
-		fmt.Printf("[Using iptables]containerId: %s\n", containerId)
+		fmt.Printf("[Using iptables modern]containerId: %s\n", containerId)
 		return &GeneralCollector{
 			Collector:   collectorIpt,
 			containerId: containerId,
@@ -49,7 +49,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	// linux 3.x iptables + uid owner
 	collectorLgc, err := legacy.NewMonitor(containerId)
 	if err == nil {
-		fmt.Printf("[Using iptables]containerId: %s\n", containerId)
+		fmt.Printf("[Using iptables legacy]containerId: %s\n", containerId)
 		return &GeneralCollector{
 			Collector:   collectorLgc,
 			containerId: containerId,
