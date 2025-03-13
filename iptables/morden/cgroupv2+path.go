@@ -1,7 +1,8 @@
-package main
+package morden
 
 import (
 	"bytes"
+	"ebpf_collector/general"
 	"fmt"
 	"log"
 	"os"
@@ -31,6 +32,8 @@ const (
 	BridgeMode = "bridge"
 	HostMode   = "host"
 )
+
+var _ general.Collector = (*ContainerMonitor)(nil)
 
 type ContainerMonitor struct {
 	containerID string
@@ -209,6 +212,16 @@ func (m *ContainerMonitor) GetStats() (inBytes, outBytes uint64, err error) {
 		return 0, 0, fmt.Errorf("unsupported network mode")
 	}
 }
+
+func (m *ContainerMonitor) CollectTotal(cgroupId uint64) (in, out uint64) {
+	in, out, err := m.GetStats()
+	if err != nil {
+		log.Printf("GetStats Error: %v", err)
+		return 0, 0
+	}
+	return in, out
+}
+
 func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	var totalIn, totalOut uint64
 

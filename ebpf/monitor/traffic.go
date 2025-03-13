@@ -1,6 +1,7 @@
 package monitor
 
 import (
+	"ebpf_collector/general"
 	"ebpf_collector/types"
 	"fmt"
 
@@ -12,13 +13,15 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target arm64 traffic ebpf.c
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target arm traffic ebpf.c
 
-type Collector struct {
+var _ general.Collector = (*EBPFCollector)(nil)
+
+type EBPFCollector struct {
 	objs  trafficObjects
 	links map[string]link.Link
 }
 
-func NewCollector() (*Collector, error) {
-	c := &Collector{
+func NewCollector() (*EBPFCollector, error) {
+	c := &EBPFCollector{
 		links: make(map[string]link.Link),
 	}
 	if err := c.load(); err != nil {
@@ -27,7 +30,7 @@ func NewCollector() (*Collector, error) {
 	}
 	return c, nil
 }
-func (c *Collector) load() error {
+func (c *EBPFCollector) load() error {
 	if err := loadTrafficObjects(&c.objs, nil); err != nil {
 		return fmt.Errorf("loading objects: %v", err)
 	}
@@ -59,14 +62,14 @@ func (c *Collector) load() error {
 	return nil
 }
 
-func (c *Collector) Close() {
+func (c *EBPFCollector) Close() {
 	for _, link := range c.links {
 		link.Close()
 	}
 	c.objs.Close()
 }
 
-func (c *Collector) Collect() (ingress, egress types.FlowCgroup) {
+func (c *EBPFCollector) Collect() (ingress, egress types.FlowCgroup) {
 	ingress = make(types.FlowCgroup)
 	egress = make(types.FlowCgroup)
 
@@ -92,4 +95,25 @@ func (c *Collector) Collect() (ingress, egress types.FlowCgroup) {
 	}
 
 	return ingress, egress
+}
+
+func (c *EBPFCollector) CollectTotal(cgroupID uint64) (in, out uint64) {
+	ingress, egress := c.Collect()
+
+	for id, v := range ingress {
+		if id != cgroupID {
+			continue
+		}
+		in = v
+		break
+	}
+
+	for id, v := range egress {
+		if id != cgroupID {
+			continue
+		}
+		out = v
+		break
+	}
+	return
 }

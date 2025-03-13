@@ -1,6 +1,7 @@
 package legacy
 
 import (
+	"ebpf_collector/general"
 	"fmt"
 	"log"
 	"os/exec"
@@ -15,6 +16,8 @@ const (
 	HostMode     = "host"
 	networkTable = "filter"
 )
+
+var _ general.Collector = (*ContainerMonitor)(nil)
 
 type ContainerMonitor struct {
 	containerID string
@@ -96,6 +99,15 @@ func (m *ContainerMonitor) Cleanup() {
 	default:
 		panic("unsupported network mode")
 	}
+}
+
+func (m *ContainerMonitor) CollectTotal(cgroupId uint64) (in, out uint64) {
+	out, err := m.GetStats()
+	if err != nil {
+		log.Printf("Legacy GetStats Error: %v", err)
+		return 0, 0
+	}
+	return 0, out
 }
 
 func (m *ContainerMonitor) GetStats() (outBytes uint64, err error) {
