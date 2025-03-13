@@ -25,9 +25,11 @@ func main() {
 		return
 	}
 	go func() {
-		in, out := monitor.CollectTotal(monitor.CGroupId())
-		fmt.Printf("Ingress: %d bytes, Egress: %d bytes\n", in, out)
-		time.Sleep(2 * time.Second)
+		for {
+			in, out := monitor.CollectTotal(monitor.CGroupId())
+			fmt.Printf("Ingress: %d bytes, Egress: %d bytes\n", in, out)
+			time.Sleep(2 * time.Second)
+		}
 	}()
 
 	// wait ctrl-c
