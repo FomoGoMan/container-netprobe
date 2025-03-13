@@ -3,6 +3,7 @@ package morden
 import (
 	"bytes"
 	"ebpf_collector/general"
+	helper "ebpf_collector/pkg/cgroup"
 	"fmt"
 	"log"
 	"os"
@@ -44,6 +45,13 @@ type ContainerMonitor struct {
 }
 
 func NewMonitor(containerID string) (*ContainerMonitor, error) {
+	// check iptables feature support -m cgroup --path
+	if pass, err := helper.IptablesSupportsCgroupPath(); err != nil {
+		return nil, err
+	} else if !pass {
+		return nil, fmt.Errorf("iptables cgroup path match not supported, iptables version too low")
+	}
+
 	ipt, err := iptables.New()
 	if err != nil {
 		return nil, err
@@ -137,6 +145,12 @@ func getCustomCgroupName(container string) string {
 }
 
 func bindContainerToCgroup(containerPID string, containerID string) error {
+	// TODO: in cGroupV2, use Unified Hierarchy, eg. /sys/fs/cgroup/my_group/
+	// 		 in cGroupV1, use Subtree Hierarchy, eg. /sys/fs/cgroup/cpu
+
+	// TODO: make sure cgroup-tools installed
+	// 	sudo apt install cgroup-tools  # Debian/Ubuntu
+	// sudo yum install libcgroup-tools  # CentOS/RHEL
 	cmd := exec.Command("cgcreate", "-g", fmt.Sprintf("cpu:/%s", getCustomCgroupName(containerID)))
 	var stderr bytes.Buffer
 	var stdout bytes.Buffer
