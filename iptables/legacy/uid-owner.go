@@ -13,8 +13,9 @@ import (
 )
 
 const (
-	BridgeMode = "bridge"
-	HostMode   = "host"
+	BridgeMode   = "bridge"
+	HostMode     = "host"
+	networkTable = "filter"
 )
 
 type ContainerMonitor struct {
@@ -76,23 +77,20 @@ func (m *ContainerMonitor) Setup() error {
 }
 
 func (m *ContainerMonitor) setupHostRules() error {
-
 	// out flow (upstream)
-	//  iptables -A OUTPUT -m owner --uid-owner 1000
-	if err := m.ipt.Insert("filter", "OUTPUT", 1, "-m", "owner", "--uid-owner", strconv.Itoa(m.uid), "-j", "ACCEPT"); err != nil {
+	if err := m.ipt.Insert(networkTable, "OUTPUT", 1, "-m", "owner", "--uid-owner", strconv.Itoa(m.uid), "-j", "ACCEPT"); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// 清理规则
 func (m *ContainerMonitor) Cleanup() {
 	switch m.networkMode {
 	case BridgeMode:
 		panic("cleanup err: traffic monitoring in bridge mod using iptables is not implemented")
 	case HostMode:
-		err := m.ipt.Delete("mangle", "OUTPUT", "-m", "owner", "--uid-owner", strconv.Itoa(m.uid), "-j", "ACCEPT")
+		err := m.ipt.Delete(networkTable, "OUTPUT", "-m", "owner", "--uid-owner", strconv.Itoa(m.uid), "-j", "ACCEPT")
 		if err != nil {
 			log.Printf("Delete OUTPUT Rule Error: %v", err)
 		}
@@ -103,7 +101,6 @@ func (m *ContainerMonitor) GetStats() (outBytes uint64, err error) {
 	switch m.networkMode {
 	case BridgeMode:
 		panic("not implemented")
-		// return m.getBridgeStats()
 	case HostMode:
 		return m.getHostStats()
 	default:
@@ -113,11 +110,8 @@ func (m *ContainerMonitor) GetStats() (outBytes uint64, err error) {
 func (m *ContainerMonitor) getHostStats() (uint64, error) {
 	var totalOut uint64
 
-	rules, _ := m.ipt.ListWithCounters("filter", "OUTPUT")
+	rules, _ := m.ipt.ListWithCounters(networkTable, "OUTPUT")
 	for _, rule := range rules {
-		fmt.Printf("(OUTPUT)Rule: %s\n", rule)
-		fmt.Printf("MATCH:[%v]\n", fmt.Sprintf("--uid-owner %v", m.uid))
-		//TODO: remove hard code of "cpu/docker_traffic"
 		if strings.Contains(rule, fmt.Sprintf("--uid-owner %v", m.uid)) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
@@ -190,7 +184,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
