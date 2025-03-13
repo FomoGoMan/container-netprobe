@@ -1,13 +1,11 @@
-package main
+package legacy
 
 import (
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/coreos/go-iptables/iptables"
 )
@@ -165,35 +163,4 @@ func getUidOf(pid int) int {
 		return uid
 	}
 	return 0
-}
-
-func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("Usage: ./monitor <container-id> ")
-		return
-	}
-
-	monitor, err := NewMonitor(os.Args[1])
-	// monitor, err := NewMonitor("1ed1c00b4e2d")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer monitor.Cleanup()
-
-	if err := monitor.Setup(); err != nil {
-		log.Fatal(err)
-	}
-
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		out, err := monitor.GetStats()
-		if err != nil {
-			log.Printf("Error: %v", err)
-			continue
-		}
-		fmt.Printf("[%s]  OUT: %d bytes\n",
-			time.Now().Format("15:04:05"), out)
-	}
 }

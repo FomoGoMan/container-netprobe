@@ -13,6 +13,27 @@ docker run -d --name mycontainer \
   your_image
 ```
 
+### Demo测试
+1. 启动测试容器
+```
+docker run --network host --user 1234:1234 -d amouat/network-utils tail -f /dev/null
+```
+
+2. 编译监控程序并启动
+```
+cd cmd/
+go build main.go
+./main <container id> #填入上面启动的容器的ID
+```
+
+3. 进入测试容器产生上行流量并查看监控程序输出
+```
+docker exec -it <container id> bash
+
+# 使用循环持续发送请求（按 Ctrl+C 停止）
+while true; do curl -s http://httpbin.org/get >/dev/null; sleep 1; done
+```
+
 ---
 
 ### 故障排查：确认内核模块支持情况
