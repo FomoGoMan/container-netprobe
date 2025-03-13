@@ -99,7 +99,9 @@ cgroup match options:
     cat /proc/filesystems | grep cgroup2
     ```
     如果输出中包含 `cgroup2`，说明 `cgroup v2` 已启用。
-
+> ​cgroup v1：默认从 2.6.24 到 4.x 内核，但已被逐步淘汰。\
+​
+cgroup v2：从 5.x 内核开始成为主流，​RHEL 8+、Ubuntu 20.04+、Fedora 31+ 默认启用
 ---
 
 ### **结论**
