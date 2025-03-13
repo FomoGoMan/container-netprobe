@@ -69,6 +69,10 @@ func (c *EBPFCollector) Close() {
 	c.objs.Close()
 }
 
+func (c *EBPFCollector) Cleanup() {
+	c.Close()
+}
+
 func (c *EBPFCollector) Collect() (ingress, egress types.FlowCgroup) {
 	ingress = make(types.FlowCgroup)
 	egress = make(types.FlowCgroup)

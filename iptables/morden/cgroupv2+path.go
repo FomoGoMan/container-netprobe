@@ -148,7 +148,7 @@ func bindContainerToCgroup(containerPID string, containerID string) error {
 		return err
 	}
 
-	cmd = exec.Command("sh", "-c", fmt.Sprintf("echo %s > %s/cgroup.procs", containerPID, getCustomCgroupPath(containerID)))
+	cmd = exec.Command("bash", "-c", fmt.Sprintf("echo %s > %s/cgroup.procs", containerPID, getCustomCgroupPath(containerID)))
 	cmd.Stderr = &stderr
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {

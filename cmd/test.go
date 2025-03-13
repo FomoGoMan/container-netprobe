@@ -24,6 +24,8 @@ func main() {
 		fmt.Println(err)
 		return
 	}
+	defer monitor.Cleanup()
+
 	go func() {
 		for {
 			in, out := monitor.CollectTotal(monitor.CGroupId())

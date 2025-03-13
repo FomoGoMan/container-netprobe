@@ -59,3 +59,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 
 	panic("no collector supported this system")
 }
+
+func (c *GeneralCollector) Cleanup() {
+	c.Collector.Cleanup()
+}
