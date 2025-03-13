@@ -15,38 +15,16 @@
   ```bash
   iptables --version
   ```
-  输出示例：
-  ```
-  iptables v1.8.7 (legacy)
-  iptables v1.8.7 (nf_tables) 等等
-  ```
-  如果版本低于 `1.8.0`，需要升级 `iptables`。
-
-• **升级 `iptables`**：
-  • 对于 Ubuntu/Debian：
-    ```bash
-    sudo apt-get update
-    sudo apt-get install iptables
-    ```
-  • 对于 CentOS/RHEL：
-    ```bash
-    sudo yum install iptables
-    ```
-
 ---
 
 ### **2. Linux 内核版本**
-`cgroup --path` 依赖于 Linux 内核的 `cgroup` 功能，需要 Linux 内核版本 **4.8** 或更高版本。
+`cgroup --path` 依赖于 Linux 内核的 `cgroup` 功能，需要 Linux 内核版本 **4.18** 或更高版本。
 
 • **检查 Linux 内核版本**：
   ```bash
   uname -r
   ```
-  输出示例：
-  ```
-  5.4.0-42-generic
-  ```
-  如果内核版本低于 `4.8`，需要升级内核。
+ 
 
 • **升级 Linux 内核**：
   • 对于 Ubuntu/Debian：
@@ -104,11 +82,12 @@ cgroup match options:
 cgroup v2：从 5.x 内核开始成为主流，​RHEL 8+、Ubuntu 20.04+、Fedora 31+ 默认启用
 ---
 
-### **结论**
-• **iptables 版本**：需要 `1.8.0` 或更高版本。
+### **常见系统支持情况**
+| 发行版                | 内核版本            | iptables 版本       | 是否支持 `--path`      |
+|-----------------------|---------------------|---------------------|-----------------------|
+| **Ubuntu 20.04 LTS**  | 5.4+                | 1.8.4+              | ✔️                    |
+| **RHEL/CentOS 8**     | 4.18+               | 1.8.4+              | ✔️                    |
+| **Debian 10**         | 4.19+               | 1.8.2+              | ✔️                    |
+| **Ubuntu 18.04 LTS**  | 4.15+（需手动升级） | 1.6.1（默认不支持） | ❌（需升级 iptables） |
 
-• **Linux 内核版本**：需要 `4.8` 或更高版本。
-
-• **cgroup 工具**：确保已安装 `cgroup-tools` 或 `libcgroup-tools`。
-
-• **cgroup v2**：确保系统已启用 `cgroup v2`。
+---

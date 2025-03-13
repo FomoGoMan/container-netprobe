@@ -144,30 +144,37 @@ func getCustomCgroupName(container string) string {
 	// return fmt.Sprintf("Monitor_Docker_%v", container)
 }
 
+// Note: in cGroupV2, use Unified Hierarchy, eg. /sys/fs/cgroup/my_group/
+//
+//	in cGroupV1, use Subtree Hierarchy, eg. /sys/fs/cgroup/cpu
 func bindContainerToCgroup(containerPID string, containerID string) error {
-	// TODO: in cGroupV2, use Unified Hierarchy, eg. /sys/fs/cgroup/my_group/
-	// 		 in cGroupV1, use Subtree Hierarchy, eg. /sys/fs/cgroup/cpu
-
 	// TODO: make sure cgroup-tools installed
 	// 	sudo apt install cgroup-tools  # Debian/Ubuntu
 	// sudo yum install libcgroup-tools  # CentOS/RHEL
-	cmd := exec.Command("cgcreate", "-g", fmt.Sprintf("cpu:/%s", getCustomCgroupName(containerID)))
-	var stderr bytes.Buffer
-	var stdout bytes.Buffer
-	cmd.Stderr = &stderr
-	cmd.Stdout = &stdout
 
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("cgcreate error: %v, Stderr: %s, stdout: %s\n", err, stderr.String(), stdout.String())
-		return err
-	}
+	// NOTE: the following method is for cgroup v1
+	if helper.DetectCgroupVersion() == helper.CgroupV1 {
+		cmd := exec.Command("cgcreate", "-g", fmt.Sprintf("cpu:/%s", getCustomCgroupName(containerID)))
+		var stderr bytes.Buffer
+		var stdout bytes.Buffer
+		cmd.Stderr = &stderr
+		cmd.Stdout = &stdout
 
-	cmd = exec.Command("bash", "-c", fmt.Sprintf("echo %s > %s/cgroup.procs", containerPID, getCustomCgroupPath(containerID)))
-	cmd.Stderr = &stderr
-	cmd.Stdout = &stdout
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("Error: %v, Stderr: %s, Stdout: %s\n", err, stderr.String(), stdout.String())
-		return err
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("cgcreate error: %v, Stderr: %s, stdout: %s\n", err, stderr.String(), stdout.String())
+			return err
+		}
+
+		cmd = exec.Command("bash", "-c", fmt.Sprintf("echo %s > %s/cgroup.procs", containerPID, getCustomCgroupPath(containerID)))
+		cmd.Stderr = &stderr
+		cmd.Stdout = &stdout
+		if err := cmd.Run(); err != nil {
+			fmt.Printf("Error: %v, Stderr: %s, Stdout: %s\n", err, stderr.String(), stdout.String())
+			return err
+		}
+	} else {
+		// v2
+		return fmt.Errorf("not implemented")
 	}
 
 	return nil
