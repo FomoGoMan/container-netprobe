@@ -1,11 +1,5 @@
 package types
 
-type FlowData map[uint32]uint64 // key对应C代码中的L4_TCP_SEND_V4等枚举
-
-// FlowMap 全局流量映射 [容器ID] => 流量统计
-type FlowMap map[string]*FlowData
-
-// 流量类型枚举（必须与C代码定义的14种类型完全一致）
 type FlowType uint32
 
 type FlowCgroup map[uint64]uint64
