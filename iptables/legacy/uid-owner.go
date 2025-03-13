@@ -133,6 +133,7 @@ func (m *ContainerMonitor) getHostStats() (uint64, error) {
 
 	rules, _ := m.ipt.ListWithCounters(networkTable, "OUTPUT")
 	for _, rule := range rules {
+		fmt.Printf("Rule: %s\n", rule)
 		if strings.Contains(rule, fmt.Sprintf("--uid-owner %v", m.uid)) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
