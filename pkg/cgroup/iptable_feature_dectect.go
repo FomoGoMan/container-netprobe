@@ -37,7 +37,7 @@ func IptablesSupportsOwnerUidMatch() (bool, error) {
 	err := cmd.Run()
 	output := stdout.String() + stderr.String()
 
-	if strings.Contains(output, "--path") {
+	if strings.Contains(output, "--uid-owner") {
 		return true, nil
 	}
 
