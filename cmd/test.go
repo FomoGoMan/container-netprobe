@@ -4,6 +4,8 @@ import (
 	collector "ebpf_collector"
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -27,4 +29,9 @@ func main() {
 		fmt.Printf("Ingress: %d bytes, Egress: %d bytes\n", in, out)
 		time.Sleep(2 * time.Second)
 	}()
+
+	// wait ctrl-c
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+	<-sig
 }
