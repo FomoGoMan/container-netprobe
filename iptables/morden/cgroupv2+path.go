@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	// cg "github.com/containerd/cgroups/v3"
 	"github.com/coreos/go-iptables/iptables"
 )
 
@@ -142,10 +143,10 @@ func getCustomCgroupName(container string) string {
 //
 //	in cGroupV1, use Subtree Hierarchy, eg. /sys/fs/cgroup/cpu
 func bindContainerToCgroup(containerPID string, containerID string) error {
-	// TODO: make sure cgroup-tools installed
-	// 	sudo apt install cgroup-tools  # Debian/Ubuntu
-	// sudo yum install libcgroup-tools  # CentOS/RHEL
-
+	// var cgroupV2 bool
+	// if cg.Mode() == cg.Unified {
+	// 	cgroupV2 = true
+	// }
 	// NOTE: the following method is for cgroup v1
 	if cgHelper.DetectCgroupVersion() == cgHelper.CgroupV1 {
 		ensureCGroupCMDInstalled()
