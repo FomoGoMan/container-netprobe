@@ -34,7 +34,7 @@ func main() {
 	go func() {
 		for {
 			in, out := monitor.CollectTotal(monitor.CGroupId())
-			fmt.Printf("Ingress: %d bytes, Egress: %d bytes\n", in, out)
+			fmt.Printf("[%s] In: %d bytes, Out: %d bytes\n", time.Now().Format("15:04:05"), in, out)
 			time.Sleep(2 * time.Second)
 		}
 	}()
