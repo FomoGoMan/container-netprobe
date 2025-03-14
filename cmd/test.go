@@ -1,12 +1,13 @@
 package main
 
 import (
-	collector "ebpf_collector"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	collector "github.com/FomoGoMan/container-netprobe"
 )
 
 func main() {
