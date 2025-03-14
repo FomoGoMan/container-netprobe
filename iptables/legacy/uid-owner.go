@@ -71,8 +71,6 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 }
 
 func (m *ContainerMonitor) SetUp() error {
-	m.Cleanup()
-
 	switch m.networkMode {
 	case BridgeMode:
 		panic("traffic monitoring in bridge mod using iptables is not implemented")
