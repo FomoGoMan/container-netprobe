@@ -222,13 +222,17 @@ func (m *ContainerMonitor) CollectTotal(cgroupId uint64) (in, out uint64) {
 }
 
 func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
-	var totalIn, totalOut uint64
+	prefix := "cpu/"
+	if cg.Mode() == cg.Unified {
+		prefix = ""
+	}
 
+	var totalIn, totalOut uint64
 	rules, _ := m.ipt.ListWithCounters("mangle", "INPUT")
 	for _, rule := range rules {
 		// fmt.Printf("(INPUT)Rule: %s\n", rule)
 		//TODO: remove hard code string "cpu/docker_traffic"
-		if strings.Contains(rule, "cpu/docker_traffic") {
+		if strings.Contains(rule, prefix+getCustomCgroupName(m.containerID)) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
 
@@ -245,7 +249,7 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	for _, rule := range rules {
 		// fmt.Printf("(OUTPUT)Rule: %s\n", rule)
 		//TODO: remove hard code string "cpu/docker_traffic"
-		if strings.Contains(rule, "cpu/docker_traffic") {
+		if strings.Contains(rule, prefix+getCustomCgroupName(m.containerID)) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
 				bytes, err := strconv.ParseUint(fields[8], 10, 64)
