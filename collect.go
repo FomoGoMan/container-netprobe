@@ -34,7 +34,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 			}, nil
 		}
 	}
-	fmt.Println("eBPF collector not supported, try other collector")
+	fmt.Println("eBPF collector not supported, try other collector, error %v\n", err)
 
 	// linux 4.x, iptables + cgroup v2
 	collectorIpt, err := modern.NewMonitor(containerId)
@@ -46,6 +46,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 			cgroupId:    0, // not used
 		}, nil
 	}
+	fmt.Printf("iptables modern collector not supported, try other collector, error %v\n", err)
 
 	// linux 3.x iptables + uid owner
 	collectorLgc, err := legacy.NewMonitor(containerId)
