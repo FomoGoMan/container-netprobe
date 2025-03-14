@@ -24,9 +24,7 @@ var _ general.Collector = (*ContainerMonitor)(nil)
 type ContainerMonitor struct {
 	containerID string
 	networkMode string
-	pid         int
 	uid         int // container uid
-	cgroupPath  string
 	ipt         *iptables.IPTables
 }
 
@@ -57,7 +55,6 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	monitor := &ContainerMonitor{
 		containerID: containerID,
 		networkMode: mode,
-		pid:         pid,
 		uid:         getUidOf(pid),
 		ipt:         ipt,
 	}
