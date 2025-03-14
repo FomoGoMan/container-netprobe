@@ -99,7 +99,7 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 			log.Printf("Error creating cgroup: %v\n", err)
 			return err
 		} else {
-			log.Println("The group created successfully")
+			log.Println("The group created successfully, path %v", "sys/fs/cgroup/"+getCustomCgroupName(containerID))
 		}
 		m.cgroupManager = cgroupManager
 		return nil
