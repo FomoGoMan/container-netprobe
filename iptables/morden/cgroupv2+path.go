@@ -3,7 +3,8 @@ package morden
 import (
 	"bytes"
 	"ebpf_collector/general"
-	helper "ebpf_collector/pkg/cgroup"
+	cgHelper "ebpf_collector/pkg/cgroup"
+	helper "ebpf_collector/pkg/iptables"
 	"fmt"
 	"log"
 	"os"
@@ -88,8 +89,7 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	return monitor, nil
 }
 
-func createCGroupEnsureCommand(cgroupPath string) error {
-
+func ensureCGroupCMDInstalled() error {
 	if !commandExists("cgcreate") {
 		fmt.Println("cgcreate not found, installing cgroup-tools...")
 		if err := installCgroupTools(); err != nil {
@@ -97,12 +97,6 @@ func createCGroupEnsureCommand(cgroupPath string) error {
 			return err
 		}
 	}
-
-	if err := createCgroup(cgroupPath); err != nil {
-		fmt.Printf("Failed to create cgroup: %v\n", err)
-		return err
-	}
-
 	fmt.Println("Cgroup created successfully!")
 	return nil
 }
@@ -134,7 +128,7 @@ func createCgroup(path string) error {
 	return nil
 }
 
-func getCustomCgroupPath(container string) string {
+func getCustomCgroupPathV1(container string) string {
 	// return "/sys/fs/cgroup/cpu/docker_traffic"
 	return fmt.Sprintf("/sys/fs/cgroup/cpu/%s/", getCustomCgroupName(container))
 }
@@ -153,7 +147,8 @@ func bindContainerToCgroup(containerPID string, containerID string) error {
 	// sudo yum install libcgroup-tools  # CentOS/RHEL
 
 	// NOTE: the following method is for cgroup v1
-	if helper.DetectCgroupVersion() == helper.CgroupV1 {
+	if cgHelper.DetectCgroupVersion() == cgHelper.CgroupV1 {
+		ensureCGroupCMDInstalled()
 		cmd := exec.Command("cgcreate", "-g", fmt.Sprintf("cpu:/%s", getCustomCgroupName(containerID)))
 		var stderr bytes.Buffer
 		var stdout bytes.Buffer
@@ -165,7 +160,7 @@ func bindContainerToCgroup(containerPID string, containerID string) error {
 			return err
 		}
 
-		cmd = exec.Command("bash", "-c", fmt.Sprintf("echo %s > %s/cgroup.procs", containerPID, getCustomCgroupPath(containerID)))
+		cmd = exec.Command("bash", "-c", fmt.Sprintf("echo %s > %s/cgroup.procs", containerPID, getCustomCgroupPathV1(containerID)))
 		cmd.Stderr = &stderr
 		cmd.Stdout = &stdout
 		if err := cmd.Run(); err != nil {

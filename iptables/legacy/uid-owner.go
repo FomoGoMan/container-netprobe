@@ -2,7 +2,7 @@ package legacy
 
 import (
 	"ebpf_collector/general"
-	helper "ebpf_collector/pkg/cgroup"
+	helper "ebpf_collector/pkg/iptables"
 	"fmt"
 	"log"
 	"os/exec"
