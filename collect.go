@@ -33,6 +33,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 				cgroupId:    cgroupId,
 			}, nil
 		}
+		log.Printf("GetCgroupID Error: %v\n", err)
 	}
 	log.Printf("eBPF collector not supported, try other collector, error %v\n", err)
 
