@@ -94,7 +94,7 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 	if cg.Mode() == cg.Unified {
 		var cgroupManager *cgroupsv2.Manager
 		res := cgroupsv2.Resources{}
-		cgroupManager, err := cgroupsv2.NewManager("/sys/fs/cgroup/", getCustomCgroupName(containerID), &res)
+		cgroupManager, err := cgroupsv2.NewManager("/sys/fs/cgroup/", "/"+getCustomCgroupName(containerID), &res)
 		if err != nil {
 			log.Printf("Error creating cgroup: %v\n", err)
 			return err
