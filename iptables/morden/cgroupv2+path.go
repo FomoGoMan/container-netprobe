@@ -128,10 +128,12 @@ func (m *ContainerMonitor) bindContainerToCgroup(containerPID string, containerI
 	if err != nil {
 		return err
 	}
-
+	// v2
 	if m.cgroupManager != nil {
 		m.cgroupManager.AddProc(uint64(pid))
+		return nil
 	}
+	// v1
 	return m.control.Add(cgroupsv1.Process{Pid: int(pid)}, cgroupsv1.Name("cpu"))
 }
 
