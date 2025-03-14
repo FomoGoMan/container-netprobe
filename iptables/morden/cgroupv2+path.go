@@ -231,11 +231,9 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	rules, _ := m.ipt.ListWithCounters("mangle", "INPUT")
 	for _, rule := range rules {
 		// fmt.Printf("(INPUT)Rule: %s\n", rule)
-		//TODO: remove hard code string "cpu/docker_traffic"
 		if strings.Contains(rule, prefix+getCustomCgroupName(m.containerID)) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
-
 				bytes, err := strconv.ParseUint(fields[8], 10, 64)
 				if err != nil {
 					return 0, 0, fmt.Errorf("failed to parse input bytes: %v", err)
@@ -248,7 +246,6 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	rules, _ = m.ipt.ListWithCounters("mangle", "OUTPUT")
 	for _, rule := range rules {
 		// fmt.Printf("(OUTPUT)Rule: %s\n", rule)
-		//TODO: remove hard code string "cpu/docker_traffic"
 		if strings.Contains(rule, prefix+getCustomCgroupName(m.containerID)) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
