@@ -297,7 +297,7 @@ func main() {
 			log.Printf("Error: %v", err)
 			continue
 		}
-		log.Printf("[%s] Traffic IN: %d bytes, OUT: %d bytes\n",
-			time.Now().Format("15:04:05"), in, out)
+		log.Printf("Traffic IN: %d bytes, OUT: %d bytes\n",
+			in, out)
 	}
 }
