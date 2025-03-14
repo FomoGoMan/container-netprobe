@@ -14,7 +14,7 @@ func main() {
 	// 1. 启动测试容器 (Host/Bridge 模式均可)
 	containerID := helper.StartContainer()
 	defer helper.StopContainer(containerID)
-	fmt.Printf("目标容器 ID: %s\n", containerID)
+	log.Printf("目标容器 ID: %s\n", containerID)
 
 	// 2. 获取容器的 CGroup ID
 	cgroupPath := helper.GetContainerInfo(containerID)
@@ -23,7 +23,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("获取 CGroup ID 失败: %v", err)
 	}
-	fmt.Printf("CGroup ID: %d\n", cgroupID)
+	log.Printf("CGroup ID: %d\n", cgroupID)
 
 	// 3. 加载并挂载 监控程序
 	collector, err := monitor.NewCollector()

@@ -66,13 +66,13 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Network mode: %s of container %v\n", mode, containerID)
+	log.Printf("Network mode: %s of container %v\n", mode, containerID)
 
 	pid, err := getContainerPID(containerID)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("PID: %d of container %v\n", pid, containerID)
+	log.Printf("PID: %d of container %v\n", pid, containerID)
 
 	monitor := &ContainerMonitor{
 		containerID: containerID,
@@ -96,10 +96,10 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 		res := cgroupsv2.Resources{}
 		cgroupManager, err := cgroupsv2.NewManager("/sys/fs/cgroup/", getCustomCgroupName(containerID), &res)
 		if err != nil {
-			fmt.Printf("Error creating cgroup: %v\n", err)
+			log.Printf("Error creating cgroup: %v\n", err)
 			return err
 		} else {
-			fmt.Println("The group created successfully")
+			log.Println("The group created successfully")
 		}
 		m.cgroupManager = cgroupManager
 		return nil
@@ -142,12 +142,12 @@ func (m *ContainerMonitor) SetUp() error {
 	case HostMode:
 		err := m.createCgroup(m.containerID)
 		if err != nil {
-			fmt.Printf("Error creating cgroup: %v\n", err)
+			log.Printf("Error creating cgroup: %v\n", err)
 			return err
 		}
 		err = m.bindContainerToCgroup(strconv.Itoa(m.pid), m.containerID)
 		if err != nil {
-			fmt.Printf("Error binding container to cgroup: %v\n", err)
+			log.Printf("Error binding container to cgroup: %v\n", err)
 			return err
 		}
 		return m.setupHostRules()
@@ -255,7 +255,7 @@ func getNetworkMode(containerID string) (string, error) {
 		return "", err
 	}
 	mode := strings.TrimSpace(string(out))
-	fmt.Printf("Raw Network mode: %s of container %v\n", mode, containerID)
+	log.Printf("Raw Network mode: %s of container %v\n", mode, containerID)
 	if mode == "default" || mode == "bridge" {
 		return BridgeMode, nil
 	}
@@ -273,7 +273,7 @@ func getContainerPID(containerID string) (int, error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: ./monitor <container-id>")
+		log.Println("Usage: ./monitor <container-id>")
 		return
 	}
 
@@ -297,7 +297,7 @@ func main() {
 			log.Printf("Error: %v", err)
 			continue
 		}
-		fmt.Printf("[%s] Traffic IN: %d bytes, OUT: %d bytes\n",
+		log.Printf("[%s] Traffic IN: %d bytes, OUT: %d bytes\n",
 			time.Now().Format("15:04:05"), in, out)
 	}
 }

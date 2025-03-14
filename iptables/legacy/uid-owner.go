@@ -44,13 +44,13 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Network mode: %s of container %v\n", mode, containerID)
+	log.Printf("Network mode: %s of container %v\n", mode, containerID)
 
 	pid, err := getContainerPID(containerID)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("PID: %d of container %v\n", pid, containerID)
+	log.Printf("PID: %d of container %v\n", pid, containerID)
 
 	monitor := &ContainerMonitor{
 		containerID: containerID,
@@ -58,7 +58,7 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 		uid:         getUidOf(pid),
 		ipt:         ipt,
 	}
-	fmt.Printf("Uid of container %v: %d\n", containerID, monitor.uid)
+	log.Printf("Uid of container %v: %d\n", containerID, monitor.uid)
 
 	switch mode {
 	case BridgeMode:
@@ -93,7 +93,7 @@ func (m *ContainerMonitor) Cleanup() {
 	case BridgeMode:
 		panic("cleanup err: traffic monitoring in bridge mod using iptables is not implemented")
 	case HostMode:
-		fmt.Printf("Deleting RULE...\n")
+		log.Printf("Deleting RULE...\n")
 		err := m.ipt.Delete(networkTable, "OUTPUT", "-m", "owner", "--uid-owner", strconv.Itoa(m.uid), "-j", "ACCEPT", "--wait")
 		if err != nil {
 			log.Printf("Delete OUTPUT Rule Error: %v", err)
@@ -150,7 +150,7 @@ func getNetworkMode(containerID string) (string, error) {
 		return "", err
 	}
 	mode := strings.TrimSpace(string(out))
-	fmt.Printf("Raw Network mode: %s of container %v\n", mode, containerID)
+	log.Printf("Raw Network mode: %s of container %v\n", mode, containerID)
 	if mode == "default" || mode == "bridge" {
 		return BridgeMode, nil
 	}
