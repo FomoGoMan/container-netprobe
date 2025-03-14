@@ -1,11 +1,12 @@
 package main
 
 import (
-	"ebpf_collector/iptables/legacy"
 	"fmt"
 	"log"
 	"os"
 	"time"
+
+	"github.com/FomoGoMan/container-netprobe/iptables/legacy"
 )
 
 func main() {

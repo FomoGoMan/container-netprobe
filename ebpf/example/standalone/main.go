@@ -1,8 +1,6 @@
 package main
 
 import (
-	traffic "ebpf_collector/ebpf/monitor"
-	"ebpf_collector/types"
 	"fmt"
 	"log"
 	"net"
@@ -10,6 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	traffic "github.com/FomoGoMan/container-netprobe/ebpf/monitor"
+	"github.com/FomoGoMan/container-netprobe/types"
 )
 
 // this code show ingress and egress traffic of all cgroup

@@ -1,12 +1,13 @@
 package main
 
 import (
-	"ebpf_collector/ebpf/monitor"
-	helper "ebpf_collector/pkg/container"
-	mytypes "ebpf_collector/types"
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/FomoGoMan/container-netprobe/ebpf/monitor"
+	helper "github.com/FomoGoMan/container-netprobe/pkg/container"
+	mytypes "github.com/FomoGoMan/container-netprobe/types"
 )
 
 func main() {

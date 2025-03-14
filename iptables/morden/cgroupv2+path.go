@@ -2,9 +2,6 @@ package morden
 
 import (
 	"bytes"
-	"ebpf_collector/general"
-	cgHelper "ebpf_collector/pkg/cgroup"
-	helper "ebpf_collector/pkg/iptables"
 	"fmt"
 	"log"
 	"os"
@@ -12,6 +9,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/FomoGoMan/container-netprobe/general"
+	cgHelper "github.com/FomoGoMan/container-netprobe/pkg/cgroup"
+	helper "github.com/FomoGoMan/container-netprobe/pkg/iptables"
 
 	// cg "github.com/containerd/cgroups/v3"
 	"github.com/coreos/go-iptables/iptables"

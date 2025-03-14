@@ -1,12 +1,13 @@
 package collector
 
 import (
-	"ebpf_collector/ebpf/monitor"
-	"ebpf_collector/general"
-	"ebpf_collector/iptables/legacy"
-	modern "ebpf_collector/iptables/morden"
-	helper "ebpf_collector/pkg/container"
 	"fmt"
+
+	"github.com/FomoGoMan/container-netprobe/ebpf/monitor"
+	"github.com/FomoGoMan/container-netprobe/general"
+	"github.com/FomoGoMan/container-netprobe/iptables/legacy"
+	modern "github.com/FomoGoMan/container-netprobe/iptables/morden"
+	helper "github.com/FomoGoMan/container-netprobe/pkg/container"
 )
 
 type GeneralCollector struct {

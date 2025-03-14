@@ -1,9 +1,10 @@
 package monitor
 
 import (
-	"ebpf_collector/general"
-	"ebpf_collector/types"
 	"fmt"
+
+	"github.com/FomoGoMan/container-netprobe/general"
+	"github.com/FomoGoMan/container-netprobe/types"
 
 	"github.com/cilium/ebpf"
 	"github.com/cilium/ebpf/link"

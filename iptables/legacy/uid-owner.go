@@ -1,13 +1,14 @@
 package legacy
 
 import (
-	"ebpf_collector/general"
-	helper "ebpf_collector/pkg/iptables"
 	"fmt"
 	"log"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/FomoGoMan/container-netprobe/general"
+	helper "github.com/FomoGoMan/container-netprobe/pkg/iptables"
 
 	"github.com/coreos/go-iptables/iptables"
 )
