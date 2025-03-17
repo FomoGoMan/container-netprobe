@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/FomoGoMan/container-netprobe/general"
+	general "github.com/FomoGoMan/container-netprobe/interface"
 	helper "github.com/FomoGoMan/container-netprobe/pkg/iptables"
 
 	"github.com/coreos/go-iptables/iptables"

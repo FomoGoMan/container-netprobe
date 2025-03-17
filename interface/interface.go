@@ -6,3 +6,10 @@ type Collector interface {
 	SetUp() error
 	Cleanup()
 }
+
+// type CustomCgroup interface {
+// 	// get cgroup id
+// 	CGroupId() uint64
+// 	// get cgroup path
+// 	CGroupPath() string
+// }
