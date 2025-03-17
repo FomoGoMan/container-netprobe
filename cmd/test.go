@@ -25,6 +25,9 @@ func main() {
 		log.Println(err)
 		return
 	}
+	// optional
+	monitor.WithSuspiciousDetect()
+
 	err = monitor.SetUp()
 	if err != nil {
 		log.Println(err)

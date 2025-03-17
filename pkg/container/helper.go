@@ -81,3 +81,16 @@ func GetCgroupID(cgroupPath string) (uint64, error) {
 	// 3. inode 号即为 cgroup ID（内核行为）
 	return stat.Ino, nil
 }
+
+func GetPid(containerID string) (int, error) {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		log.Fatal(err)
+	}
+	ctx := context.Background()
+	info, err := cli.ContainerInspect(ctx, containerID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return info.State.Pid, nil
+}

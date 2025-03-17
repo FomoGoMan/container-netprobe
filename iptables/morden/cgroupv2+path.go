@@ -38,6 +38,9 @@ const (
 )
 
 var _ general.Collector = (*ContainerMonitor)(nil)
+var _ general.CGroupInfoGetter = (*ContainerMonitor)(nil)
+var _ general.PidInfoGetter = (*ContainerMonitor)(nil)
+var _ general.SuspiciousDetector = (*ContainerMonitor)(nil)
 
 type ContainerMonitor struct {
 	containerID        string
@@ -313,4 +316,18 @@ func main() {
 		log.Printf("Traffic IN: %d bytes, OUT: %d bytes\n",
 			in, out)
 	}
+}
+
+func (m *ContainerMonitor) GetCgroupPath() string {
+	// TODO: implement
+	return ""
+}
+func (m *ContainerMonitor) GetPid() int {
+	// TODO: implement
+	return 0
+}
+
+func (m *ContainerMonitor) EnableSuspiciousDetect() (detected chan int, err error) {
+	// TODO: implement
+	return
 }

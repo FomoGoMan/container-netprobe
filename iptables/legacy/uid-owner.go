@@ -20,6 +20,9 @@ const (
 )
 
 var _ general.Collector = (*ContainerMonitor)(nil)
+var _ general.CGroupInfoGetter = (*ContainerMonitor)(nil)
+var _ general.PidInfoGetter = (*ContainerMonitor)(nil)
+var _ general.SuspiciousDetector = (*ContainerMonitor)(nil)
 
 type ContainerMonitor struct {
 	containerID string
@@ -181,4 +184,18 @@ func getUidOf(pid int) int {
 		return uid
 	}
 	return 0
+}
+
+func (m *ContainerMonitor) GetCgroupPath() string {
+	// TODO: implement
+	return ""
+}
+func (m *ContainerMonitor) GetPid() int {
+	// TODO: implement
+	return 0
+}
+
+func (m *ContainerMonitor) EnableSuspiciousDetect() (detected chan int, err error) {
+	// TODO: implement
+	return
 }

@@ -7,30 +7,30 @@ import (
 	general "github.com/FomoGoMan/container-netprobe/interface"
 	"github.com/FomoGoMan/container-netprobe/iptables/legacy"
 	modern "github.com/FomoGoMan/container-netprobe/iptables/morden"
-	helper "github.com/FomoGoMan/container-netprobe/pkg/container"
 )
 
 type GeneralCollector struct {
-	general.Collector
+	collector   general.CollectorWithFraudDetect
 	containerId string
-	cgroupId    uint64
+	stopCollect bool
 }
 
-func (c *GeneralCollector) CGroupId() uint64 {
-	return c.cgroupId
+func (c *GeneralCollector) CollectTotal() (in uint64, out uint64) {
+	if c.stopCollect {
+		return 0, 0
+	}
+	return c.collector.CollectTotal()
 }
 
 func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	// linux 5.10+, ebpf
 	collector, err := monitor.NewEbpfCollector(containerId)
 	if err == nil {
-		cgroupId, err := helper.GetCgroupID(helper.GetContainerInfo(containerId))
 		if err == nil {
-			log.Printf("[Using eBPF]containerId: %s, cgroupId: %d\n", containerId, cgroupId)
+			log.Printf("[Using eBPF]containerId: %s\n", containerId)
 			return &GeneralCollector{
-				Collector:   collector,
+				collector:   collector,
 				containerId: containerId,
-				cgroupId:    cgroupId,
 			}, nil
 		}
 		log.Printf("GetCgroupID Error: %v\n", err)
@@ -42,9 +42,8 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	if err == nil {
 		log.Printf("[Using iptables modern]containerId: %s\n", containerId)
 		return &GeneralCollector{
-			Collector:   collectorIpt,
+			collector:   collectorIpt,
 			containerId: containerId,
-			cgroupId:    0, // not used
 		}, nil
 	}
 	log.Printf("iptables modern collector not supported, try other collector, error %v\n", err)
@@ -54,15 +53,33 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	if err == nil {
 		log.Printf("[Using iptables legacy]containerId: %s\n", containerId)
 		return &GeneralCollector{
-			Collector:   collectorLgc,
+			collector:   collectorLgc,
 			containerId: containerId,
-			cgroupId:    0, // not used
 		}, nil
 	}
 
-	panic("no collector supported this system")
+	panic("no collector supported for this system")
+}
+
+func (c *GeneralCollector) WithSuspiciousDetect() {
+	detection, err := c.collector.EnableSuspiciousDetect()
+	if err != nil {
+		panic(err)
+	}
+	go func() {
+		for pid := range detection {
+			log.Printf("Suspicious pid: %d\n", pid)
+			c.stopCollect = true
+		}
+	}()
+
+	return
 }
 
 func (c *GeneralCollector) Cleanup() {
-	c.Collector.Cleanup()
+	c.collector.Cleanup()
+}
+
+func (c *GeneralCollector) SetUp() error {
+	return c.collector.SetUp()
 }
