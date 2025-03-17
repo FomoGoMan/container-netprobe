@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"time"
 
 	general "github.com/FomoGoMan/container-netprobe/interface"
 	helperCg "github.com/FomoGoMan/container-netprobe/pkg/cgroup"
@@ -54,21 +55,28 @@ func (c *ContainerEbpfMonitor) EnableSuspiciousDetect() (suspicious chan int, er
 	pidWhiteList := []int{c.pid}
 	suspicious = make(chan int, 1)
 
-	pidsGot, err := helperCg.GetPidOfCgroup(filepath.Join(c.GetCgroupPath(), "cgroup.procs"))
-	if err != nil {
-		return nil, err
-	}
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
 
-	// TODO: may be allow of pid parent pid belongs to
-	for _, whitePid := range pidWhiteList {
-		for _, pid := range pidsGot {
-			if pid == whitePid {
+			pidsGot, err := helperCg.GetPidOfCgroup(filepath.Join(c.GetCgroupPath(), "cgroup.procs"))
+			if err != nil {
+				log.Printf("GetPidOfCgroup Error: %v\n", err)
 				continue
 			}
-			suspicious <- pid
-			return
+
+			// TODO: may be allow of pid parent pid belongs to
+			for _, whitePid := range pidWhiteList {
+				for _, pid := range pidsGot {
+					if pid == whitePid {
+						continue
+					}
+					suspicious <- pid
+					return
+				}
+			}
 		}
-	}
+	}()
 
 	return
 }
