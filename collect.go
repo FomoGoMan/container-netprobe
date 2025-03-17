@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/FomoGoMan/container-netprobe/ebpf/monitor"
-	"github.com/FomoGoMan/container-netprobe/general"
+	general "github.com/FomoGoMan/container-netprobe/interface"
 	"github.com/FomoGoMan/container-netprobe/iptables/legacy"
 	modern "github.com/FomoGoMan/container-netprobe/iptables/morden"
 	helper "github.com/FomoGoMan/container-netprobe/pkg/container"
@@ -37,7 +37,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	}
 	log.Printf("eBPF collector not supported, try other collector, error %v\n", err)
 
-	// linux 4.x, iptables + cgroup v2
+	// linux 4.x, iptables + cgroup v1/v2
 	collectorIpt, err := modern.NewMonitor(containerId)
 	if err == nil {
 		log.Printf("[Using iptables modern]containerId: %s\n", containerId)

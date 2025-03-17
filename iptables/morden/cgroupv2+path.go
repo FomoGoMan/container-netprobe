@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FomoGoMan/container-netprobe/general"
+	general "github.com/FomoGoMan/container-netprobe/interface"
 	helper "github.com/FomoGoMan/container-netprobe/pkg/iptables"
 
 	cg "github.com/containerd/cgroups/v3"
