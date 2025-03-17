@@ -103,7 +103,7 @@ func (m *ContainerMonitor) Cleanup() {
 	}
 }
 
-func (m *ContainerMonitor) CollectTotal(cgroupId uint64) (in, out uint64) {
+func (m *ContainerMonitor) CollectTotal() (in, out uint64) {
 	out, err := m.GetStats()
 	if err != nil {
 		log.Printf("Legacy GetStats Error: %v", err)

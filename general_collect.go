@@ -22,7 +22,7 @@ func (c *GeneralCollector) CGroupId() uint64 {
 
 func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	// linux 5.10+, ebpf
-	collector, err := monitor.NewCollector()
+	collector, err := monitor.NewEbpfCollector(containerId)
 	if err == nil {
 		cgroupId, err := helper.GetCgroupID(helper.GetContainerInfo(containerId))
 		if err == nil {

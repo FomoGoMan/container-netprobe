@@ -212,7 +212,7 @@ func (m *ContainerMonitor) GetStats() (inBytes, outBytes uint64, err error) {
 	}
 }
 
-func (m *ContainerMonitor) CollectTotal(cgroupId uint64) (in, out uint64) {
+func (m *ContainerMonitor) CollectTotal() (in, out uint64) {
 	in, out, err := m.GetStats()
 	if err != nil {
 		log.Printf("GetStats Error: %v", err)

@@ -34,7 +34,7 @@ func main() {
 
 	go func() {
 		for {
-			in, out := monitor.CollectTotal(monitor.CGroupId())
+			in, out := monitor.CollectTotal()
 			log.Printf("In: %d bytes, Out: %d bytes\n", in, out)
 			time.Sleep(2 * time.Second)
 		}

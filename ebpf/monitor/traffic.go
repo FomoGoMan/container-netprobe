@@ -3,7 +3,6 @@ package monitor
 import (
 	"fmt"
 
-	general "github.com/FomoGoMan/container-netprobe/interface"
 	"github.com/FomoGoMan/container-netprobe/types"
 
 	"github.com/cilium/ebpf"
@@ -14,8 +13,6 @@ import (
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target arm64 traffic ebpf.c
 //go:generate go run github.com/cilium/ebpf/cmd/bpf2go -target arm traffic ebpf.c
 
-var _ general.Collector = (*EBPFCollector)(nil)
-
 type EBPFCollector struct {
 	objs  trafficObjects
 	links map[string]link.Link
@@ -24,10 +21,6 @@ type EBPFCollector struct {
 func NewCollector() (*EBPFCollector, error) {
 	c := &EBPFCollector{
 		links: make(map[string]link.Link),
-	}
-	if err := c.load(); err != nil {
-		c.Close()
-		return nil, err
 	}
 	return c, nil
 }
@@ -68,10 +61,6 @@ func (c *EBPFCollector) Close() {
 		link.Close()
 	}
 	c.objs.Close()
-}
-
-func (c *EBPFCollector) Cleanup() {
-	c.Close()
 }
 
 func (c *EBPFCollector) Collect() (ingress, egress types.FlowCgroup) {
