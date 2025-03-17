@@ -1,7 +1,6 @@
 package morden
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -10,11 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FomoGoMan/container-netprobe/general"
-	cgHelper "github.com/FomoGoMan/container-netprobe/pkg/cgroup"
+	general "github.com/FomoGoMan/container-netprobe/interface"
 	helper "github.com/FomoGoMan/container-netprobe/pkg/iptables"
 
-	// cg "github.com/containerd/cgroups/v3"
+	cg "github.com/containerd/cgroups/v3"
+	cgroupsv1 "github.com/containerd/cgroups/v3/cgroup1"
+	cgroupsv2 "github.com/containerd/cgroups/v3/cgroup2"
 	"github.com/coreos/go-iptables/iptables"
 )
 
@@ -40,11 +40,13 @@ const (
 var _ general.Collector = (*ContainerMonitor)(nil)
 
 type ContainerMonitor struct {
-	containerID string
-	networkMode string
-	pid         int
-	cgroupPath  string
-	ipt         *iptables.IPTables
+	containerID        string
+	networkMode        string
+	pid                int
+	ipt                *iptables.IPTables
+	cgroupManager      *cgroupsv2.Manager // v2
+	control            cgroupsv1.Cgroup   // v1
+	cgroupRelativePath string
 }
 
 func NewMonitor(containerID string) (*ContainerMonitor, error) {
@@ -64,13 +66,13 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Network mode: %s of container %v\n", mode, containerID)
+	log.Printf("Network mode: %s of container %v\n", mode, containerID)
 
 	pid, err := getContainerPID(containerID)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("PID: %d of container %v\n", pid, containerID)
+	log.Printf("PID: %d of container %v\n", pid, containerID)
 
 	monitor := &ContainerMonitor{
 		containerID: containerID,
@@ -82,24 +84,33 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	switch mode {
 	case BridgeMode:
 		panic("traffic monitoring in bridge mod using iptables is not implemented")
-	case HostMode:
-		if err := bindContainerToCgroup(strconv.Itoa(pid), containerID); err != nil {
-			return nil, err
-		}
 	}
 
 	return monitor, nil
 }
 
-func ensureCGroupCMDInstalled() error {
-	if !commandExists("cgcreate") {
-		fmt.Println("cgcreate not found, installing cgroup-tools...")
-		if err := installCgroupTools(); err != nil {
-			fmt.Printf("Failed to install cgroup-tools: %v\n", err)
+func (m *ContainerMonitor) createCgroup(containerID string) error {
+	// cgroup v2
+	if cg.Mode() == cg.Unified {
+		var cgroupManager *cgroupsv2.Manager
+		res := cgroupsv2.Resources{}
+		cgroupManager, err := cgroupsv2.NewManager("/sys/fs/cgroup/", "/"+getCustomCgroupName(containerID), &res)
+		if err != nil {
+			log.Printf("Error creating cgroup: %v\n", err)
 			return err
+		} else {
+			log.Println("The group created successfully, path %v", "sys/fs/cgroup/"+getCustomCgroupName(containerID))
 		}
+		m.cgroupManager = cgroupManager
+		return nil
 	}
-	fmt.Println("Cgroup created successfully!")
+
+	// cgroup v1
+	control, err := cgroupsv1.New(cgroupsv1.StaticPath("/"+getCustomCgroupName(containerID)), nil)
+	if err != nil {
+		return err
+	}
+	m.control = control
 	return nil
 }
 
@@ -108,73 +119,22 @@ func commandExists(cmd string) bool {
 	return err == nil
 }
 
-func installCgroupTools() error {
-	// Ubuntu
-	cmd := exec.Command("apt-get", "install", "-y", "cgroup-tools")
-	if err := cmd.Run(); err != nil {
-		fmt.Printf("failed to install cgroup-tools using apt install, try yum: %v\n", err)
-	}
-	// ​CentOS/RHEL
-	cmd = exec.Command("yum", "install", "-y", "libcgroup-tools")
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("failed to install cgroup-tools: %v", err)
-	}
-	return nil
-}
-
-func createCgroup(path string) error {
-	cmd := exec.Command("cgcreate", "-g", "cpu:/"+path)
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("cgcreate failed: %v", err)
-	}
-	return nil
-}
-
-func getCustomCgroupPathV1(container string) string {
-	// return "/sys/fs/cgroup/cpu/docker_traffic"
-	return fmt.Sprintf("/sys/fs/cgroup/cpu/%s/", getCustomCgroupName(container))
-}
-
 func getCustomCgroupName(container string) string {
-	return fmt.Sprintf("docker_traffic_%s", container)
-	// return fmt.Sprintf("Monitor_Docker_%v", container)
+	return fmt.Sprintf("docker_probe_%s", container)
 }
 
-// Note: in cGroupV2, use Unified Hierarchy, eg. /sys/fs/cgroup/my_group/
-//
-//	in cGroupV1, use Subtree Hierarchy, eg. /sys/fs/cgroup/cpu
-func bindContainerToCgroup(containerPID string, containerID string) error {
-	// var cgroupV2 bool
-	// if cg.Mode() == cg.Unified {
-	// 	cgroupV2 = true
-	// }
-	// NOTE: the following method is for cgroup v1
-	if cgHelper.DetectCgroupVersion() == cgHelper.CgroupV1 {
-		ensureCGroupCMDInstalled()
-		cmd := exec.Command("cgcreate", "-g", fmt.Sprintf("cpu:/%s", getCustomCgroupName(containerID)))
-		var stderr bytes.Buffer
-		var stdout bytes.Buffer
-		cmd.Stderr = &stderr
-		cmd.Stdout = &stdout
-
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("cgcreate error: %v, Stderr: %s, stdout: %s\n", err, stderr.String(), stdout.String())
-			return err
-		}
-
-		cmd = exec.Command("bash", "-c", fmt.Sprintf("echo %s > %s/cgroup.procs", containerPID, getCustomCgroupPathV1(containerID)))
-		cmd.Stderr = &stderr
-		cmd.Stdout = &stdout
-		if err := cmd.Run(); err != nil {
-			fmt.Printf("Error: %v, Stderr: %s, Stdout: %s\n", err, stderr.String(), stdout.String())
-			return err
-		}
-	} else {
-		// v2
-		return fmt.Errorf("not implemented")
+func (m *ContainerMonitor) bindContainerToCgroup(containerPID string, containerID string) error {
+	pid, err := strconv.ParseInt(containerPID, 10, 64)
+	if err != nil {
+		return err
 	}
-
-	return nil
+	// v2
+	if m.cgroupManager != nil {
+		m.cgroupManager.AddProc(uint64(pid))
+		return nil
+	}
+	// v1
+	return m.control.Add(cgroupsv1.Process{Pid: int(pid)}, cgroupsv1.Name("cpu"))
 }
 
 func (m *ContainerMonitor) SetUp() error {
@@ -182,6 +142,16 @@ func (m *ContainerMonitor) SetUp() error {
 	case BridgeMode:
 		panic("traffic monitoring in bridge mod using iptables is not implemented")
 	case HostMode:
+		err := m.createCgroup(m.containerID)
+		if err != nil {
+			log.Printf("Error creating cgroup: %v\n", err)
+			return err
+		}
+		err = m.bindContainerToCgroup(strconv.Itoa(m.pid), m.containerID)
+		if err != nil {
+			log.Printf("Error binding container to cgroup: %v\n", err)
+			return err
+		}
 		return m.setupHostRules()
 	default:
 		return fmt.Errorf("unsupported network mode: %s", m.networkMode)
@@ -189,13 +159,18 @@ func (m *ContainerMonitor) SetUp() error {
 }
 
 func (m *ContainerMonitor) setupHostRules() error {
+	prefix := "cpu/"
+	if cg.Mode() == cg.Unified {
+		prefix = ""
+	}
+
 	// In flow (downstream)
-	if err := m.ipt.Insert("mangle", "INPUT", 1, "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID)); err != nil {
+	if err := m.ipt.Insert("mangle", "INPUT", 1, "-m", "cgroup", "--path", prefix+getCustomCgroupName(m.containerID)); err != nil {
 		return err
 	}
 
 	// out flow (upstream)
-	if err := m.ipt.Insert("mangle", "OUTPUT", 1, "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID)); err != nil {
+	if err := m.ipt.Insert("mangle", "OUTPUT", 1, "-m", "cgroup", "--path", prefix+getCustomCgroupName(m.containerID)); err != nil {
 		return err
 	}
 
@@ -203,19 +178,27 @@ func (m *ContainerMonitor) setupHostRules() error {
 }
 
 func (m *ContainerMonitor) Cleanup() {
+	prefix := "cpu/"
+	if cg.Mode() == cg.Unified {
+		prefix = ""
+	}
+
 	switch m.networkMode {
 	case BridgeMode:
 		panic("cleanup err: traffic monitoring in bridge mod using iptables is not implemented")
 	case HostMode:
-		err := m.ipt.Delete("mangle", "INPUT", "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID))
+		err := m.ipt.Delete("mangle", "INPUT", "-m", "cgroup", "--path", prefix+getCustomCgroupName(m.containerID))
 		if err != nil {
 			log.Printf("Delete INPUT Rule Error: %v", err)
 		}
-		err = m.ipt.Delete("mangle", "OUTPUT", "-m", "cgroup", "--path", "cpu/"+getCustomCgroupName(m.containerID))
+		err = m.ipt.Delete("mangle", "OUTPUT", "-m", "cgroup", "--path", prefix+getCustomCgroupName(m.containerID))
 		if err != nil {
 			log.Printf("Delete OUTPUT Rule Error: %v", err)
 		}
 	}
+
+	// TODO: delete cgroup after container stopped
+	// defer m.control.Delete()
 }
 
 func (m *ContainerMonitor) GetStats() (inBytes, outBytes uint64, err error) {
@@ -239,16 +222,18 @@ func (m *ContainerMonitor) CollectTotal(cgroupId uint64) (in, out uint64) {
 }
 
 func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
-	var totalIn, totalOut uint64
+	prefix := "cpu/"
+	if cg.Mode() == cg.Unified {
+		prefix = ""
+	}
 
+	var totalIn, totalOut uint64
 	rules, _ := m.ipt.ListWithCounters("mangle", "INPUT")
 	for _, rule := range rules {
 		// fmt.Printf("(INPUT)Rule: %s\n", rule)
-		//TODO: remove hard code string "cpu/docker_traffic"
-		if strings.Contains(rule, "cpu/docker_traffic") {
+		if strings.Contains(rule, prefix+getCustomCgroupName(m.containerID)) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
-
 				bytes, err := strconv.ParseUint(fields[8], 10, 64)
 				if err != nil {
 					return 0, 0, fmt.Errorf("failed to parse input bytes: %v", err)
@@ -261,8 +246,7 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	rules, _ = m.ipt.ListWithCounters("mangle", "OUTPUT")
 	for _, rule := range rules {
 		// fmt.Printf("(OUTPUT)Rule: %s\n", rule)
-		//TODO: remove hard code string "cpu/docker_traffic"
-		if strings.Contains(rule, "cpu/docker_traffic") {
+		if strings.Contains(rule, prefix+getCustomCgroupName(m.containerID)) {
 			fields := strings.Fields(rule)
 			if len(fields) >= 9 {
 				bytes, err := strconv.ParseUint(fields[8], 10, 64)
@@ -284,7 +268,7 @@ func getNetworkMode(containerID string) (string, error) {
 		return "", err
 	}
 	mode := strings.TrimSpace(string(out))
-	fmt.Printf("Raw Network mode: %s of container %v\n", mode, containerID)
+	log.Printf("Raw Network mode: %s of container %v\n", mode, containerID)
 	if mode == "default" || mode == "bridge" {
 		return BridgeMode, nil
 	}
@@ -302,7 +286,7 @@ func getContainerPID(containerID string) (int, error) {
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: ./monitor <container-id>")
+		log.Println("Usage: ./monitor <container-id>")
 		return
 	}
 
@@ -326,7 +310,7 @@ func main() {
 			log.Printf("Error: %v", err)
 			continue
 		}
-		fmt.Printf("[%s] Traffic IN: %d bytes, OUT: %d bytes\n",
-			time.Now().Format("15:04:05"), in, out)
+		log.Printf("Traffic IN: %d bytes, OUT: %d bytes\n",
+			in, out)
 	}
 }

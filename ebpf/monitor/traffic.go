@@ -3,7 +3,7 @@ package monitor
 import (
 	"fmt"
 
-	"github.com/FomoGoMan/container-netprobe/general"
+	general "github.com/FomoGoMan/container-netprobe/interface"
 	"github.com/FomoGoMan/container-netprobe/types"
 
 	"github.com/cilium/ebpf"

@@ -1,10 +1,10 @@
 package collector
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/FomoGoMan/container-netprobe/ebpf/monitor"
-	"github.com/FomoGoMan/container-netprobe/general"
+	general "github.com/FomoGoMan/container-netprobe/interface"
 	"github.com/FomoGoMan/container-netprobe/iptables/legacy"
 	modern "github.com/FomoGoMan/container-netprobe/iptables/morden"
 	helper "github.com/FomoGoMan/container-netprobe/pkg/container"
@@ -26,31 +26,33 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	if err == nil {
 		cgroupId, err := helper.GetCgroupID(helper.GetContainerInfo(containerId))
 		if err == nil {
-			fmt.Printf("[Using eBPF]containerId: %s, cgroupId: %d\n", containerId, cgroupId)
+			log.Printf("[Using eBPF]containerId: %s, cgroupId: %d\n", containerId, cgroupId)
 			return &GeneralCollector{
 				Collector:   collector,
 				containerId: containerId,
 				cgroupId:    cgroupId,
 			}, nil
 		}
+		log.Printf("GetCgroupID Error: %v\n", err)
 	}
-	fmt.Println("eBPF collector not supported, try other collector")
+	log.Printf("eBPF collector not supported, try other collector, error %v\n", err)
 
-	// linux 4.x, iptables + cgroup v2
+	// linux 4.x, iptables + cgroup v1/v2
 	collectorIpt, err := modern.NewMonitor(containerId)
 	if err == nil {
-		fmt.Printf("[Using iptables modern]containerId: %s\n", containerId)
+		log.Printf("[Using iptables modern]containerId: %s\n", containerId)
 		return &GeneralCollector{
 			Collector:   collectorIpt,
 			containerId: containerId,
 			cgroupId:    0, // not used
 		}, nil
 	}
+	log.Printf("iptables modern collector not supported, try other collector, error %v\n", err)
 
 	// linux 3.x iptables + uid owner
 	collectorLgc, err := legacy.NewMonitor(containerId)
 	if err == nil {
-		fmt.Printf("[Using iptables legacy]containerId: %s\n", containerId)
+		log.Printf("[Using iptables legacy]containerId: %s\n", containerId)
 		return &GeneralCollector{
 			Collector:   collectorLgc,
 			containerId: containerId,

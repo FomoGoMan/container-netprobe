@@ -35,7 +35,6 @@ func main() {
 			log.Printf("Error: %v", err)
 			continue
 		}
-		fmt.Printf("[%s]  OUT: %d bytes\n",
-			time.Now().Format("15:04:05"), out)
+		log.Printf("OUT: %d bytes\n", out)
 	}
 }

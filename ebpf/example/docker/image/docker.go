@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -21,7 +21,7 @@ func main() {
 	for {
 		select {
 		case <-sig:
-			fmt.Println("\nExiting...")
+			log.Println("\nExiting...")
 			return
 		}
 	}
@@ -44,7 +44,7 @@ func generateTestTraffic() {
 				buf := make([]byte, 4096)
 				n, _ := conn.Read(buf) // 简单示例，需处理错误
 				// print response as readable string
-				fmt.Println(string(buf[:n]))
+				log.Println(string(buf[:n]))
 				_ = n // 实际统计时累加 n
 			}
 		}
