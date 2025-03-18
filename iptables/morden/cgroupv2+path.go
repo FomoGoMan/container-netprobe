@@ -152,11 +152,9 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 		if err != nil {
 			log.Printf("Error creating cgroup: %v\n", err)
 			return err
-		} else {
-			log.Printf("The group created successfully, path %v\n", "sys/fs/cgroup/"+getCustomCgroupName(containerID))
 		}
 		m.cgroupManager = cgroupManager
-		m.cGroupPath = filepath.Join("sys/fs/cgroup/", getCustomCgroupName(containerID))
+		m.cGroupPath = filepath.Join("/sys/fs/cgroup/", getCustomCgroupName(containerID))
 		log.Printf("The group created successfully, version [v2] path %v\n", m.cGroupPath)
 		return nil
 	}
@@ -167,7 +165,7 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 		return err
 	}
 	m.control = control
-	m.cGroupPath = filepath.Join("sys/fs/cgroup/cpu/", getCustomCgroupName(containerID))
+	m.cGroupPath = filepath.Join("/sys/fs/cgroup/cpu/", getCustomCgroupName(containerID))
 	log.Printf("The group created successfully, version [v1] path %v\n", m.cGroupPath)
 	return nil
 }
