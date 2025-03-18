@@ -27,7 +27,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	collector, err := monitor.NewEbpfCollector(containerId)
 	if err == nil {
 		if err == nil {
-			log.Printf("[Using eBPF]containerId: %s\n", containerId)
+			log.Printf("[Using eBPF] containerId: %s\n", containerId)
 			return &GeneralCollector{
 				collector:   collector,
 				containerId: containerId,
@@ -40,7 +40,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	// linux 4.x, iptables + cgroup v1/v2
 	collectorIpt, err := modern.NewMonitor(containerId)
 	if err == nil {
-		log.Printf("[Using iptables modern]containerId: %s\n", containerId)
+		log.Printf("[Using iptables modern] containerId: %s\n", containerId)
 		return &GeneralCollector{
 			collector:   collectorIpt,
 			containerId: containerId,
@@ -51,7 +51,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	// linux 3.x iptables + uid owner
 	collectorLgc, err := legacy.NewMonitor(containerId)
 	if err == nil {
-		log.Printf("[Using iptables legacy]containerId: %s\n", containerId)
+		log.Printf("[Using iptables legacy] containerId: %s\n", containerId)
 		return &GeneralCollector{
 			collector:   collectorLgc,
 			containerId: containerId,
@@ -68,7 +68,7 @@ func (c *GeneralCollector) WithSuspiciousDetect() {
 	}
 	go func() {
 		for pid := range detection {
-			log.Printf("Suspicious pid: %d\n", pid)
+			log.Printf("WARN: Suspicious pid detected: %d, Stopping collecting traffic value\n", pid)
 			c.stopCollect = true
 		}
 	}()
