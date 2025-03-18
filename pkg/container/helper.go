@@ -14,7 +14,7 @@ import (
 
 // 启动测试容器并返回容器 ID
 func StartContainer() string {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -35,7 +35,7 @@ func StartContainer() string {
 
 // 停止容器
 func StopContainer(containerID string) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -108,7 +108,7 @@ func GetCgroupID(cgroupPath string) (uint64, error) {
 }
 
 func GetPid(containerID string) (int, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		log.Fatal(err)
 	}
