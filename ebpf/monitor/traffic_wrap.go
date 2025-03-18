@@ -24,7 +24,10 @@ type ContainerEbpfMonitor struct {
 }
 
 func NewEbpfCollector(containerID string) (*ContainerEbpfMonitor, error) {
-	cgroupPath := helper.GetContainerInfo(containerID)
+	cgroupPath, err := helper.GetContainerInfo(containerID)
+	if err != nil {
+		return nil, err
+	}
 	fmt.Printf("CGroup Path: %v\n", cgroupPath)
 
 	cgroupID, err := helper.GetCgroupID(cgroupPath)
