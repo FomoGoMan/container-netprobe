@@ -25,15 +25,15 @@ func main() {
 		log.Println(err)
 		return
 	}
-	// optional
-	monitor.WithSuspiciousDetect()
-
 	err = monitor.SetUp()
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	defer monitor.Cleanup()
+
+	// optional
+	monitor.WithSuspiciousDetect()
 
 	go func() {
 		for {

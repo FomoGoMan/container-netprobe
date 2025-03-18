@@ -153,10 +153,11 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 			log.Printf("Error creating cgroup: %v\n", err)
 			return err
 		} else {
-			log.Println("The group created successfully, path %v", "sys/fs/cgroup/"+getCustomCgroupName(containerID))
+			log.Printf("The group created successfully, path %v\n", "sys/fs/cgroup/"+getCustomCgroupName(containerID))
 		}
 		m.cgroupManager = cgroupManager
 		m.cGroupPath = filepath.Join("sys/fs/cgroup/", getCustomCgroupName(containerID))
+		log.Printf("The group created successfully, version [v2] path %v\n", m.cGroupPath)
 		return nil
 	}
 
@@ -166,6 +167,8 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 		return err
 	}
 	m.control = control
+	m.cGroupPath = filepath.Join("sys/fs/cgroup/cpu/", getCustomCgroupName(containerID))
+	log.Printf("The group created successfully, version [v1] path %v\n", m.cGroupPath)
 	return nil
 }
 
@@ -296,32 +299,39 @@ func (m *ContainerMonitor) GetPid() int {
 
 // launch a goroutine to monitor suspicious process that not in white list
 func (m *ContainerMonitor) EnableSuspiciousDetect() (suspicious chan int, err error) {
-	pidWhiteList := []int{m.GetPid()}
 	suspicious = make(chan int, 1)
-
+	err = m.suspiciousDetectOnce(suspicious)
 	go func() {
 		for {
 			time.Sleep(5 * time.Second)
-
-			pidsGot, err := helpercg.GetPidOfCgroup(filepath.Join(m.GetCgroupPath(), "cgroup.procs"))
-			if err != nil {
-				log.Printf("GetPidOfCgroup Error: %v\n", err)
-				continue
-			}
-			// TODO: may be allow of pid parent pid belongs to
-			for _, whitePid := range pidWhiteList {
-				for _, pid := range pidsGot {
-					if pid == whitePid {
-						continue
-					}
-					suspicious <- pid
-					return
-				}
-			}
+			m.suspiciousDetectOnce(suspicious)
 		}
 	}()
-
 	return
+}
+
+func (m *ContainerMonitor) suspiciousDetectOnce(suspicious chan int) (err error) {
+	if m.GetCgroupPath() == "" {
+		return fmt.Errorf("cgroup path is empty, hit: make sure you call `SetUp()` first before `EnableSuspiciousDetect`")
+	}
+
+	pidsGot, err := helpercg.GetPidOfCgroup(filepath.Join(m.GetCgroupPath(), "cgroup.procs"))
+	if err != nil {
+		log.Printf("GetPidOfCgroup Error: %v\n", err)
+		return err
+	}
+	pidWhiteList := []int{m.GetPid()}
+	// TODO: may be allow of pid parent pid belongs to
+	for _, whitePid := range pidWhiteList {
+		for _, pid := range pidsGot {
+			if pid == whitePid {
+				continue
+			}
+			suspicious <- pid
+			return nil
+		}
+	}
+	return nil
 }
 
 // func main() {
