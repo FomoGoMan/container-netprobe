@@ -61,7 +61,7 @@ func NewGeneralCollector(containerId string) (*GeneralCollector, error) {
 	panic("no collector supported for this system")
 }
 
-func (c *GeneralCollector) WithSuspiciousDetect() {
+func (c *GeneralCollector) EnableSuspiciousDetect() {
 	detection, err := c.collector.EnableSuspiciousDetect()
 	if err != nil {
 		panic(err)

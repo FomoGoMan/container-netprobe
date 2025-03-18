@@ -33,7 +33,7 @@ func main() {
 	defer monitor.Cleanup()
 
 	// optional
-	monitor.WithSuspiciousDetect()
+	monitor.EnableSuspiciousDetect()
 
 	go func() {
 		for {
