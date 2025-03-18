@@ -22,7 +22,7 @@ func NewCollector() (*EBPFCollector, error) {
 	c := &EBPFCollector{
 		links: make(map[string]link.Link),
 	}
-	return c, nil
+	return c, c.load()
 }
 func (c *EBPFCollector) load() error {
 	if err := loadTrafficObjects(&c.objs, nil); err != nil {
@@ -110,8 +110,4 @@ func (c *EBPFCollector) CollectTotal(cgroupID uint64) (in, out uint64) {
 		break
 	}
 	return
-}
-
-func (c *EBPFCollector) SetUp() error {
-	return nil
 }
