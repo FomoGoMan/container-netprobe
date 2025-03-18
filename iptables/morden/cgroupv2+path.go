@@ -50,9 +50,6 @@ type ContainerMonitor struct {
 	ipt           *iptables.IPTables
 	cgroupManager *cgroupsv2.Manager // v2
 	control       cgroupsv1.Cgroup   // v1
-
-	// suspicious detected flag
-	stopCollect bool
 }
 
 func NewMonitor(containerID string) (*ContainerMonitor, error) {
@@ -331,34 +328,3 @@ func (m *ContainerMonitor) suspiciousDetectOnce(suspicious chan int) (err error)
 	}
 	return nil
 }
-
-// func main() {
-// 	if len(os.Args) < 2 {
-// 		log.Println("Usage: ./monitor <container-id>")
-// 		return
-// 	}
-
-// 	monitor, err := NewMonitor(os.Args[1])
-
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	defer monitor.Cleanup()
-
-// 	if err := monitor.SetUp(); err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	ticker := time.NewTicker(5 * time.Second)
-// 	defer ticker.Stop()
-
-// 	for range ticker.C {
-// 		in, out, err := monitor.GetStats()
-// 		if err != nil {
-// 			log.Printf("Error: %v", err)
-// 			continue
-// 		}
-// 		log.Printf("Traffic IN: %d bytes, OUT: %d bytes\n",
-// 			in, out)
-// 	}
-// }
