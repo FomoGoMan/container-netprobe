@@ -89,7 +89,7 @@ func (c *ContainerEbpfMonitor) CollectTotal() (in, out uint64) {
 }
 
 func (c *ContainerEbpfMonitor) SetUp() error {
-	return c.SetUp()
+	return c.monitor.load()
 }
 
 func (c *ContainerEbpfMonitor) Cleanup() {
