@@ -20,7 +20,7 @@ func main() {
 	containerID := os.Args[1]
 	log.Printf("Target Container ID: %s\n", containerID)
 
-	monitor, err := collector.NewGeneralCollector(containerID)
+	monitor, err := collector.NewGeneralCollectorWithSetUp(containerID)
 	if err != nil {
 		log.Println(err)
 		return
