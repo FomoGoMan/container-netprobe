@@ -25,11 +25,6 @@ func main() {
 		log.Println(err)
 		return
 	}
-	err = monitor.SetUp()
-	if err != nil {
-		log.Println(err)
-		return
-	}
 	defer monitor.Cleanup()
 
 	// optional
