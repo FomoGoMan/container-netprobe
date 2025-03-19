@@ -119,6 +119,23 @@ func getCustomCgroupName(container string) string {
 	return fmt.Sprintf("docker_probe_%s", container)
 }
 
+func (m *ContainerMonitor) bindContainerToCgroup(containerPID string, containerID string) error {
+	pid, err := strconv.ParseInt(containerPID, 10, 64)
+	if err != nil {
+		return err
+	}
+	// v2
+	if m.cgroupManager != nil {
+		m.cgroupManager.AddProc(uint64(pid))
+		return nil
+	}
+	// v1
+	if m.control != nil {
+		return m.control.Add(cgroupsv1.Process{Pid: int(pid)}, cgroupsv1.Name("cpu"))
+	}
+	return fmt.Errorf("got unexpected both nil cgroup manager for v1 and v2")
+}
+
 func (m *ContainerMonitor) SetUp() error {
 	switch m.networkMode {
 	case BridgeMode:
@@ -142,7 +159,7 @@ func (m *ContainerMonitor) SetUp() error {
 
 func (m *ContainerMonitor) createCgroup(containerID string) error {
 	// cgroup v2
-	if cg.Mode() == cg.Unified {
+	if cg.Mode() == cg.Unified || cg.Mode() == cg.Hybrid {
 		var cgroupManager *cgroupsv2.Manager
 		res := cgroupsv2.Resources{}
 		cgroupManager, err := cgroupsv2.NewManager("/sys/fs/cgroup/", "/"+getCustomCgroupName(containerID), &res)
@@ -165,20 +182,6 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 	m.cGroupPath = filepath.Join("/sys/fs/cgroup/cpu/", getCustomCgroupName(containerID))
 	log.Printf("The group created successfully, version [v1] path %v\n", m.cGroupPath)
 	return nil
-}
-
-func (m *ContainerMonitor) bindContainerToCgroup(containerPID string, containerID string) error {
-	pid, err := strconv.ParseInt(containerPID, 10, 64)
-	if err != nil {
-		return err
-	}
-	// v2
-	if m.cgroupManager != nil {
-		m.cgroupManager.AddProc(uint64(pid))
-		return nil
-	}
-	// v1
-	return m.control.Add(cgroupsv1.Process{Pid: int(pid)}, cgroupsv1.Name("cpu"))
 }
 
 func (m *ContainerMonitor) setupHostRules() error {
