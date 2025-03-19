@@ -175,8 +175,12 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 	}
 
 	// cgroup v1
-	// control, err := cgroupsv1.New(cgroupsv1.StaticPath("/"+getCustomCgroupName(containerID)), nil)
-	control, err := cgroupsv1.New(cgroupsv1.StaticPath("/test"), &specs.LinuxResources{})
+	shares := uint64(100)
+	control, err := cgroupsv1.New(cgroupsv1.StaticPath("/test"), &specs.LinuxResources{
+		CPU: &specs.LinuxCPU{
+			Shares: &shares,
+		},
+	})
 	if err != nil {
 		return err
 	}
