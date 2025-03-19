@@ -12,6 +12,7 @@ import (
 	general "github.com/FomoGoMan/container-netprobe/interface"
 	helpercg "github.com/FomoGoMan/container-netprobe/pkg/cgroup"
 	helperIpt "github.com/FomoGoMan/container-netprobe/pkg/iptables"
+	"github.com/opencontainers/runtime-spec/specs-go"
 
 	cg "github.com/containerd/cgroups/v3"
 	cgroupsv1 "github.com/containerd/cgroups/v3/cgroup1"
@@ -174,7 +175,8 @@ func (m *ContainerMonitor) createCgroup(containerID string) error {
 	}
 
 	// cgroup v1
-	control, err := cgroupsv1.New(cgroupsv1.StaticPath("/"+getCustomCgroupName(containerID)), nil)
+	// control, err := cgroupsv1.New(cgroupsv1.StaticPath("/"+getCustomCgroupName(containerID)), nil)
+	control, err := cgroupsv1.New(cgroupsv1.StaticPath("/test"), &specs.LinuxResources{})
 	if err != nil {
 		return err
 	}
