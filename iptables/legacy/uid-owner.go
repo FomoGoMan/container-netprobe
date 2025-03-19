@@ -6,9 +6,11 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	general "github.com/FomoGoMan/container-netprobe/interface"
 	helper "github.com/FomoGoMan/container-netprobe/pkg/iptables"
+	helperuid "github.com/FomoGoMan/container-netprobe/pkg/uid"
 
 	"github.com/coreos/go-iptables/iptables"
 )
@@ -20,10 +22,12 @@ const (
 )
 
 var _ general.Collector = (*ContainerMonitor)(nil)
+var _ general.SuspiciousDetector = (*ContainerMonitor)(nil)
 
 type ContainerMonitor struct {
 	containerID string
 	networkMode string
+	pid         int
 	uid         int // container uid
 	ipt         *iptables.IPTables
 }
@@ -55,6 +59,7 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	monitor := &ContainerMonitor{
 		containerID: containerID,
 		networkMode: mode,
+		pid:         pid,
 		uid:         getUidOf(pid),
 		ipt:         ipt,
 	}
@@ -181,4 +186,38 @@ func getUidOf(pid int) int {
 		return uid
 	}
 	return 0
+}
+
+// launch a goroutine to monitor suspicious process that not in white list
+func (m *ContainerMonitor) EnableSuspiciousDetect() (suspicious chan int, err error) {
+	suspicious = make(chan int, 1)
+	err = m.suspiciousDetectOnce(suspicious)
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			m.suspiciousDetectOnce(suspicious)
+		}
+	}()
+	return
+}
+
+func (m *ContainerMonitor) suspiciousDetectOnce(suspicious chan int) (err error) {
+
+	pidsGot, err := helperuid.GetPIDsByUID(m.uid)
+	if err != nil {
+		log.Printf("GetPidOfCgroup Error: %v\n", err)
+		return err
+	}
+	pidWhiteList := []int{m.pid}
+	// TODO: may be allow of pid parent pid belongs to
+	for _, whitePid := range pidWhiteList {
+		for _, pid := range pidsGot {
+			if pid == whitePid {
+				continue
+			}
+			suspicious <- pid
+			return nil
+		}
+	}
+	return nil
 }

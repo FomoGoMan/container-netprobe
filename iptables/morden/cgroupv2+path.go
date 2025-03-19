@@ -3,14 +3,15 @@ package morden
 import (
 	"fmt"
 	"log"
-	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	general "github.com/FomoGoMan/container-netprobe/interface"
-	helper "github.com/FomoGoMan/container-netprobe/pkg/iptables"
+	helpercg "github.com/FomoGoMan/container-netprobe/pkg/cgroup"
+	helperIpt "github.com/FomoGoMan/container-netprobe/pkg/iptables"
 
 	cg "github.com/containerd/cgroups/v3"
 	cgroupsv1 "github.com/containerd/cgroups/v3/cgroup1"
@@ -30,28 +31,30 @@ import (
 // NOTE: 使用 mangle表，勿使用filters表因为docker或者k8s有时会在你前面插入规则，并且统计会被重置
 // 依赖：iptables -m cgroup --path 需要 iptables 1.8.0+ 和 Linux 4.8+
 
-// 依赖：iptables version
-
 const (
 	BridgeMode = "bridge"
 	HostMode   = "host"
 )
 
 var _ general.Collector = (*ContainerMonitor)(nil)
+var _ general.CGroupInfoGetter = (*ContainerMonitor)(nil)
+var _ general.PidInfoGetter = (*ContainerMonitor)(nil)
+var _ general.SuspiciousDetector = (*ContainerMonitor)(nil)
 
 type ContainerMonitor struct {
-	containerID        string
-	networkMode        string
-	pid                int
-	ipt                *iptables.IPTables
-	cgroupManager      *cgroupsv2.Manager // v2
-	control            cgroupsv1.Cgroup   // v1
-	cgroupRelativePath string
+	containerID string
+	networkMode string
+	pid         int
+	cGroupPath  string
+
+	ipt           *iptables.IPTables
+	cgroupManager *cgroupsv2.Manager // v2
+	control       cgroupsv1.Cgroup   // v1
 }
 
 func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	// check iptables feature support -m cgroup --path
-	if pass, err := helper.IptablesSupportsCgroupPath(); err != nil {
+	if pass, err := helperIpt.IptablesSupportsCgroupPath(); err != nil {
 		return nil, err
 	} else if !pass {
 		return nil, fmt.Errorf("iptables cgroup path match not supported, iptables version too low")
@@ -89,52 +92,31 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	return monitor, nil
 }
 
-func (m *ContainerMonitor) createCgroup(containerID string) error {
-	// cgroup v2
-	if cg.Mode() == cg.Unified {
-		var cgroupManager *cgroupsv2.Manager
-		res := cgroupsv2.Resources{}
-		cgroupManager, err := cgroupsv2.NewManager("/sys/fs/cgroup/", "/"+getCustomCgroupName(containerID), &res)
-		if err != nil {
-			log.Printf("Error creating cgroup: %v\n", err)
-			return err
-		} else {
-			log.Println("The group created successfully, path %v", "sys/fs/cgroup/"+getCustomCgroupName(containerID))
-		}
-		m.cgroupManager = cgroupManager
-		return nil
-	}
-
-	// cgroup v1
-	control, err := cgroupsv1.New(cgroupsv1.StaticPath("/"+getCustomCgroupName(containerID)), nil)
+func getNetworkMode(containerID string) (string, error) {
+	cmd := exec.Command("docker", "inspect", "-f", "{{.HostConfig.NetworkMode}}", containerID)
+	out, err := cmd.Output()
 	if err != nil {
-		return err
+		return "", err
 	}
-	m.control = control
-	return nil
+	mode := strings.TrimSpace(string(out))
+	log.Printf("Raw Network mode: %s of container %v\n", mode, containerID)
+	if mode == "default" || mode == "bridge" {
+		return BridgeMode, nil
+	}
+	return HostMode, nil
 }
 
-func commandExists(cmd string) bool {
-	_, err := exec.LookPath(cmd)
-	return err == nil
+func getContainerPID(containerID string) (int, error) {
+	cmd := exec.Command("docker", "inspect", "-f", "{{.State.Pid}}", containerID)
+	out, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.TrimSpace(string(out)))
 }
 
 func getCustomCgroupName(container string) string {
 	return fmt.Sprintf("docker_probe_%s", container)
-}
-
-func (m *ContainerMonitor) bindContainerToCgroup(containerPID string, containerID string) error {
-	pid, err := strconv.ParseInt(containerPID, 10, 64)
-	if err != nil {
-		return err
-	}
-	// v2
-	if m.cgroupManager != nil {
-		m.cgroupManager.AddProc(uint64(pid))
-		return nil
-	}
-	// v1
-	return m.control.Add(cgroupsv1.Process{Pid: int(pid)}, cgroupsv1.Name("cpu"))
 }
 
 func (m *ContainerMonitor) SetUp() error {
@@ -156,6 +138,47 @@ func (m *ContainerMonitor) SetUp() error {
 	default:
 		return fmt.Errorf("unsupported network mode: %s", m.networkMode)
 	}
+}
+
+func (m *ContainerMonitor) createCgroup(containerID string) error {
+	// cgroup v2
+	if cg.Mode() == cg.Unified {
+		var cgroupManager *cgroupsv2.Manager
+		res := cgroupsv2.Resources{}
+		cgroupManager, err := cgroupsv2.NewManager("/sys/fs/cgroup/", "/"+getCustomCgroupName(containerID), &res)
+		if err != nil {
+			log.Printf("Error creating cgroup: %v\n", err)
+			return err
+		}
+		m.cgroupManager = cgroupManager
+		m.cGroupPath = filepath.Join("/sys/fs/cgroup/", getCustomCgroupName(containerID))
+		log.Printf("The group created successfully, version [v2] path %v\n", m.cGroupPath)
+		return nil
+	}
+
+	// cgroup v1
+	control, err := cgroupsv1.New(cgroupsv1.StaticPath("/"+getCustomCgroupName(containerID)), nil)
+	if err != nil {
+		return err
+	}
+	m.control = control
+	m.cGroupPath = filepath.Join("/sys/fs/cgroup/cpu/", getCustomCgroupName(containerID))
+	log.Printf("The group created successfully, version [v1] path %v\n", m.cGroupPath)
+	return nil
+}
+
+func (m *ContainerMonitor) bindContainerToCgroup(containerPID string, containerID string) error {
+	pid, err := strconv.ParseInt(containerPID, 10, 64)
+	if err != nil {
+		return err
+	}
+	// v2
+	if m.cgroupManager != nil {
+		m.cgroupManager.AddProc(uint64(pid))
+		return nil
+	}
+	// v1
+	return m.control.Add(cgroupsv1.Process{Pid: int(pid)}, cgroupsv1.Name("cpu"))
 }
 
 func (m *ContainerMonitor) setupHostRules() error {
@@ -261,56 +284,47 @@ func (m *ContainerMonitor) getHostStats() (uint64, uint64, error) {
 	return totalIn, totalOut, nil
 }
 
-func getNetworkMode(containerID string) (string, error) {
-	cmd := exec.Command("docker", "inspect", "-f", "{{.HostConfig.NetworkMode}}", containerID)
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	mode := strings.TrimSpace(string(out))
-	log.Printf("Raw Network mode: %s of container %v\n", mode, containerID)
-	if mode == "default" || mode == "bridge" {
-		return BridgeMode, nil
-	}
-	return HostMode, nil
+func (m *ContainerMonitor) GetCgroupPath() string {
+	return m.cGroupPath
 }
 
-func getContainerPID(containerID string) (int, error) {
-	cmd := exec.Command("docker", "inspect", "-f", "{{.State.Pid}}", containerID)
-	out, err := cmd.Output()
-	if err != nil {
-		return 0, err
-	}
-	return strconv.Atoi(strings.TrimSpace(string(out)))
+func (m *ContainerMonitor) GetPid() int {
+	return m.pid
 }
 
-func main() {
-	if len(os.Args) < 2 {
-		log.Println("Usage: ./monitor <container-id>")
-		return
-	}
-
-	monitor, err := NewMonitor(os.Args[1])
-
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer monitor.Cleanup()
-
-	if err := monitor.SetUp(); err != nil {
-		log.Fatal(err)
-	}
-
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		in, out, err := monitor.GetStats()
-		if err != nil {
-			log.Printf("Error: %v", err)
-			continue
+// launch a goroutine to monitor suspicious process that not in white list
+func (m *ContainerMonitor) EnableSuspiciousDetect() (suspicious chan int, err error) {
+	suspicious = make(chan int, 1)
+	err = m.suspiciousDetectOnce(suspicious)
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			m.suspiciousDetectOnce(suspicious)
 		}
-		log.Printf("Traffic IN: %d bytes, OUT: %d bytes\n",
-			in, out)
+	}()
+	return
+}
+
+func (m *ContainerMonitor) suspiciousDetectOnce(suspicious chan int) (err error) {
+	if m.GetCgroupPath() == "" {
+		return fmt.Errorf("cgroup path is empty, hit: make sure you call `SetUp()` first before `EnableSuspiciousDetect`")
 	}
+
+	pidsGot, err := helpercg.GetPidOfCgroup(filepath.Join(m.GetCgroupPath(), "cgroup.procs"))
+	if err != nil {
+		log.Printf("GetPidOfCgroup Error: %v\n", err)
+		return err
+	}
+	pidWhiteList := []int{m.GetPid()}
+	// TODO: may be allow of pid parent pid belongs to
+	for _, whitePid := range pidWhiteList {
+		for _, pid := range pidsGot {
+			if pid == whitePid {
+				continue
+			}
+			suspicious <- pid
+			return nil
+		}
+	}
+	return nil
 }

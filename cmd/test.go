@@ -32,6 +32,9 @@ func main() {
 	}
 	defer monitor.Cleanup()
 
+	// optional
+	monitor.EnableSuspiciousDetect()
+
 	go func() {
 		for {
 			in, out := monitor.CollectTotal()

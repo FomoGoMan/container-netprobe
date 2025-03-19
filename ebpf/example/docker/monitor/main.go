@@ -17,7 +17,10 @@ func main() {
 	log.Printf("目标容器 ID: %s\n", containerID)
 
 	// 2. 获取容器的 CGroup ID
-	cgroupPath := helper.GetContainerInfo(containerID)
+	cgroupPath, err := helper.GetContainerInfo(containerID)
+	if err != nil {
+		log.Fatalf("获取 CGroup Path 失败: %v", err)
+	}
 	fmt.Printf("目标容器 CGroup Path: %v\n", cgroupPath)
 	cgroupID, err := helper.GetCgroupID(cgroupPath)
 	if err != nil {

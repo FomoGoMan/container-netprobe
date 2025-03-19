@@ -6,3 +6,8 @@ type Collector interface {
 	SetUp() error
 	Cleanup()
 }
+
+type CollectorWithFraudDetect interface {
+	SuspiciousDetector
+	Collector
+}
