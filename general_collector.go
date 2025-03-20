@@ -40,7 +40,7 @@ func NewGeneralCollectorWithSetUp(containerId string) (*GeneralCollector, error)
 	// linux 4.x, iptables + cgroup v1/v2
 	collectorIpt, err := modern.NewMonitor(containerId)
 	if err == nil {
-		if err = collector.SetUp(); err == nil {
+		if err = collectorIpt.SetUp(); err == nil {
 			log.Printf("[Using iptables modern] for container: %s\n", containerId)
 			return &GeneralCollector{
 				collector:   collectorIpt,
