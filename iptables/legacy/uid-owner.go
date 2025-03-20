@@ -19,7 +19,7 @@ import (
 const (
 	BridgeMode   = "bridge"
 	HostMode     = "host"
-	networkTable = "filter"
+	networkTable = "mangle"
 )
 
 var _ general.Collector = (*ContainerMonitor)(nil)
