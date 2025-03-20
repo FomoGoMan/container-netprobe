@@ -40,7 +40,7 @@ func main() {
 
 	go func() {
 		for pid := range suspiciousPid {
-			log.Printf("WARN: Suspicious pid detected: %d, Stopping collecting traffic value\n", pid)
+			log.Printf("WARN: Suspicious pid detected: %d\n", pid)
 		}
 	}()
 
