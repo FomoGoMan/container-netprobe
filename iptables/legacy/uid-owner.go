@@ -55,6 +55,9 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 	if err != nil {
 		return nil, err
 	}
+	if pid == 0 {
+		return nil, fmt.Errorf("pid of container %v is 0, container may stopped", containerID)
+	}
 	log.Printf("PID: %d of container %v\n", pid, containerID)
 
 	monitor := &ContainerMonitor{
