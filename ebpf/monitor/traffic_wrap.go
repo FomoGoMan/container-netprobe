@@ -9,6 +9,7 @@ import (
 	general "github.com/FomoGoMan/container-netprobe/interface"
 	helperCg "github.com/FomoGoMan/container-netprobe/pkg/cgroup"
 	helper "github.com/FomoGoMan/container-netprobe/pkg/container"
+	"github.com/cilium/ebpf/rlimit"
 )
 
 var _ general.Collector = (*ContainerEbpfMonitor)(nil)
@@ -89,6 +90,10 @@ func (c *ContainerEbpfMonitor) CollectTotal() (in, out uint64) {
 }
 
 func (c *ContainerEbpfMonitor) SetUp() error {
+	// Remove resource limits for kernels <5.11.
+	if err := rlimit.RemoveMemlock(); err != nil {
+		return fmt.Errorf("EbpfMonitor Removing memlock: %v", err)
+	}
 	return c.monitor.load()
 }
 

@@ -11,6 +11,7 @@ import (
 	general "github.com/FomoGoMan/container-netprobe/interface"
 	helper "github.com/FomoGoMan/container-netprobe/pkg/iptables"
 	helperuid "github.com/FomoGoMan/container-netprobe/pkg/uid"
+	"github.com/cilium/ebpf/rlimit"
 
 	"github.com/coreos/go-iptables/iptables"
 )
@@ -74,6 +75,10 @@ func NewMonitor(containerID string) (*ContainerMonitor, error) {
 }
 
 func (m *ContainerMonitor) SetUp() error {
+	// Remove resource limits for kernels <5.11.
+	if err := rlimit.RemoveMemlock(); err != nil {
+		return fmt.Errorf("ContainerMonitor Modern Removing memlock: %v", err)
+	}
 	switch m.networkMode {
 	case BridgeMode:
 		panic("traffic monitoring in bridge mod using iptables is not implemented")

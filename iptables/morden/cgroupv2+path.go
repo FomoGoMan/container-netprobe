@@ -12,6 +12,7 @@ import (
 	general "github.com/FomoGoMan/container-netprobe/interface"
 	helpercg "github.com/FomoGoMan/container-netprobe/pkg/cgroup"
 	helperIpt "github.com/FomoGoMan/container-netprobe/pkg/iptables"
+	"github.com/cilium/ebpf/rlimit"
 	"github.com/opencontainers/runtime-spec/specs-go"
 
 	cg "github.com/containerd/cgroups/v3"
@@ -138,6 +139,10 @@ func (m *ContainerMonitor) bindContainerToCgroup(containerPID string, containerI
 }
 
 func (m *ContainerMonitor) SetUp() error {
+	// Remove resource limits for kernels <5.11.
+	if err := rlimit.RemoveMemlock(); err != nil {
+		return fmt.Errorf("ContainerMonitor Modern Removing memlock: %v", err)
+	}
 	switch m.networkMode {
 	case BridgeMode:
 		panic("traffic monitoring in bridge mod using iptables is not implemented")
