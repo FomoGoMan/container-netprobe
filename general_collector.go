@@ -12,13 +12,9 @@ import (
 type GeneralCollector struct {
 	collector   general.CollectorWithFraudDetect
 	containerId string
-	stopCollect bool
 }
 
 func (c *GeneralCollector) CollectTotal() (in uint64, out uint64) {
-	if c.stopCollect {
-		return 0, 0
-	}
 	return c.collector.CollectTotal()
 }
 
@@ -68,19 +64,12 @@ func NewGeneralCollectorWithSetUp(containerId string) (*GeneralCollector, error)
 	panic("no collector supported for this system")
 }
 
-func (c *GeneralCollector) EnableSuspiciousDetect() {
-	detection, err := c.collector.EnableSuspiciousDetect()
+func (c *GeneralCollector) EnableSuspiciousDetect() (detected chan int) {
+	detected, err := c.collector.EnableSuspiciousDetect()
 	if err != nil {
 		panic(err)
 	}
-	go func() {
-		for pid := range detection {
-			log.Printf("WARN: Suspicious pid detected: %d, Stopping collecting traffic value\n", pid)
-			c.stopCollect = true
-		}
-	}()
-
-	return
+	return detected
 }
 
 func (c *GeneralCollector) Cleanup() {

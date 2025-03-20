@@ -28,13 +28,19 @@ func main() {
 	defer monitor.Cleanup()
 
 	// optional
-	monitor.EnableSuspiciousDetect()
+	suspiciousPid := monitor.EnableSuspiciousDetect()
 
 	go func() {
 		for {
 			in, out := monitor.CollectTotal()
 			log.Printf("In: %d bytes, Out: %d bytes\n", in, out)
 			time.Sleep(2 * time.Second)
+		}
+	}()
+
+	go func() {
+		for pid := range suspiciousPid {
+			log.Printf("WARN: Suspicious pid detected: %d, Stopping collecting traffic value\n", pid)
 		}
 	}()
 
